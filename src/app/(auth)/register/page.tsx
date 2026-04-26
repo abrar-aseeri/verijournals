@@ -22,7 +22,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
-  function update(field, value) {
+  function update(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
