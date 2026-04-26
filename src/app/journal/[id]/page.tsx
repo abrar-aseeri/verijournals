@@ -48,7 +48,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
             </span>
           </div>
           
-          <div className="grid grid-cols-4 gap-4 p-4 rounded-xl" style={{ background: '#F8FAFC' }}>
+          <div className="grid grid-cols-4 gap-4 p-4 rounded-xl mb-4" style={{ background: '#F8FAFC' }}>
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Trust Score</div>
               <div className="text-2xl font-bold" style={{ color: trustColor }}>{journal.trust_score || 0}</div>
@@ -70,6 +70,31 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
                 {journal.total_cites ? journal.total_cites.toLocaleString() : '—'}
               </div>
               <div className="text-xs text-gray-400">all time</div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-100 overflow-hidden">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Metrics requiring institutional access</span>
+            </div>
+            <div className="grid grid-cols-4 divide-x divide-gray-100">
+              {[
+                { label: 'Impact Factor', source: 'Clarivate JCR' },
+                { label: 'CiteScore', source: 'Scopus' },
+                { label: 'Quartile (Q1-Q4)', source: 'SCImago' },
+                { label: 'JCI', source: 'Web of Science' },
+              ].map(m => (
+                <div key={m.label} className="p-4 text-center">
+                  <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">{m.label}</div>
+                  <div className="text-lg font-bold text-gray-300">—</div>
+                  <div className="text-xs text-gray-400 mt-1">{m.source}</div>
+                  <div className="mt-2">
+                    <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ background: '#FEF3C7', color: '#92400E' }}>
+                      Institutional Access
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
