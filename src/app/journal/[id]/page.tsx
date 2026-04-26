@@ -48,16 +48,28 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
             </span>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 p-4 rounded-xl" style={{ background: '#F8FAFC' }}>
+          <div className="grid grid-cols-4 gap-4 p-4 rounded-xl" style={{ background: '#F8FAFC' }}>
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Trust Score</div>
-              <div className="text-3xl font-bold" style={{ color: trustColor }}>{journal.trust_score || 0}</div>
-              <div className="text-xs text-gray-400">out of 100</div>
+              <div className="text-2xl font-bold" style={{ color: trustColor }}>{journal.trust_score || 0}</div>
+              <div className="text-xs text-gray-400">/ 100</div>
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Risk Score</div>
-              <div className="text-3xl font-bold text-red-500">{journal.risk_score || 0}</div>
-              <div className="text-xs text-gray-400">out of 100</div>
+              <div className="text-2xl font-bold text-red-500">{journal.risk_score || 0}</div>
+              <div className="text-xs text-gray-400">/ 100</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">H-Index</div>
+              <div className="text-2xl font-bold text-blue-600">{journal.h_index ?? '—'}</div>
+              <div className="text-xs text-gray-400">OpenAlex</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total Citations</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {journal.total_cites ? journal.total_cites.toLocaleString() : '—'}
+              </div>
+              <div className="text-xs text-gray-400">all time</div>
             </div>
           </div>
         </div>
