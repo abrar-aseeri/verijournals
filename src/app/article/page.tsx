@@ -5,7 +5,7 @@ async function getArticleAndJournal(doi: string) {
   try {
     const res = await fetch(
       `https://api.openalex.org/works/https://doi.org/${doi}?select=title,authorships,publication_date,is_retracted,cited_by_count,primary_location`,
-      { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 86400 } }
+      { headers: { 'User-Agent': 'VeriJournals/1.0' }, cache: 'no-store' }
     )
     if (!res.ok) return { article: null, journal: null }
     const article = await res.json()
@@ -15,7 +15,7 @@ async function getArticleAndJournal(doi: string) {
     if (issn) {
       const jRes = await fetch(
         `https://api.openalex.org/sources?filter=issn:${issn}&select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
-        { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 2592000 } }
+        { headers: { 'User-Agent': 'VeriJournals/1.0' }, cache: 'no-store' }
       )
       const jData = await jRes.json()
       journal = jData.results?.[0] || null
