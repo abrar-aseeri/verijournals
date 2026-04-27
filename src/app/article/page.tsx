@@ -13,9 +13,8 @@ async function getArticleAndJournal(doi: string) {
     const journalName = article?.primary_location?.source?.display_name
     let journal = null
     if (issn) {
-      const issnClean = issn.replace('-', '')
       const jRes = await fetch(
-        `https://api.openalex.org/sources?filter=issn:${issnClean}&select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
+        `https://api.openalex.org/sources?filter=issn:${issn}&select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
         { headers: { 'User-Agent': 'VeriJournals/1.0' }, cache: 'no-store' }
       )
       const jData = await jRes.json()
