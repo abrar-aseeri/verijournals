@@ -14,12 +14,22 @@ async function getArticleData(doi: string) {
 
 async function getJournalData(issn: string) {
   try {
+    const clean = issn.replace('-','')
     const res = await fetch(
+      `https://api.openalex.org/sources/issn:${issn}?select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
+      { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 2592000 } }
+    )
+    if (res.ok) {
+      const d = await res.json()
+      if (d.display_name) return d
+    }
+    // fallback to filter
+    const res2 = await fetch(
       `https://api.openalex.org/sources?filter=issn:${issn}&select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
       { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 2592000 } }
     )
-    const d = await res.json()
-    return d.results?.[0] || null
+    const d2 = await res2.json()
+    return d2.results?.[0] || null
   } catch { return null }
 }
 
