@@ -13,8 +13,10 @@ async function getArticleAndJournal(doi: string) {
     const journalName = article?.primary_location?.source?.display_name
     let journal = null
     if (issn) {
+      // OpenAlex rejects ISSN with hyphen when combined with select param
+      // Solution: fetch without select first, get full data
       const jRes = await fetch(
-        `https://api.openalex.org/sources?filter=issn:${issn}&select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
+        `https://api.openalex.org/sources?filter=issn:${issn}&per_page=1`,
         { headers: { 'User-Agent': 'VeriJournals/1.0' }, cache: 'no-store' }
       )
       const jData = await jRes.json()
