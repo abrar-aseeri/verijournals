@@ -19,7 +19,28 @@ async function getJournalByIssn(issn: string) {
     .select('*')
     .eq('issn', issn)
     .single()
-  return data
+  if (data) return data
+  // fallback: fetch from OpenAlex directly
+  try {
+    const res = await fetch(
+      `https://api.openalex.org/sources?filter=issn:${issn}&select=display_name,issn,cited_by_count,summary_stats,open_access`,
+      { headers: { 'User-Agent': 'VeriJournals/1.0' } }
+    )
+    const d = await res.json()
+    const s = d.results?.[0]
+    if (!s) return null
+    return {
+      title: s.display_name,
+      issn: issn,
+      publisher: null,
+      open_access: s.open_access?.is_oa ?? false,
+      h_index: s.summary_stats?.h_index ?? null,
+      total_cites: s.cited_by_count ?? null,
+      trust_status: 'under_evaluation',
+      trust_score: 30,
+      risk_score: 10,
+    }
+  } catch { return null }
 }
 
 export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ doi?: string }> }) {
