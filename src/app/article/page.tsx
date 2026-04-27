@@ -1,36 +1,27 @@
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 
-async function getArticleData(doi: string) {
+async function getArticleAndJournal(doi: string) {
   try {
     const res = await fetch(
-      `https://api.openalex.org/works/https://doi.org/${doi}?select=title,authorships,publication_date,doi,primary_location,is_retracted,cited_by_count`,
+      `https://api.openalex.org/works/https://doi.org/${doi}?select=title,authorships,publication_date,is_retracted,cited_by_count,primary_location`,
       { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 86400 } }
     )
-    if (!res.ok) return null
-    return await res.json()
-  } catch { return null }
-}
-
-async function getJournalData(issn: string) {
-  try {
-    const clean = issn.replace('-','')
-    const res = await fetch(
-      `https://api.openalex.org/sources/issn:${issn}?select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
-      { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 2592000 } }
-    )
-    if (res.ok) {
-      const d = await res.json()
-      if (d.display_name) return d
+    if (!res.ok) return { article: null, journal: null }
+    const article = await res.json()
+    const issn = article?.primary_location?.source?.issn_l || article?.primary_location?.source?.issn?.[0]
+    const journalName = article?.primary_location?.source?.display_name
+    let journal = null
+    if (issn) {
+      const jRes = await fetch(
+        `https://api.openalex.org/sources?filter=issn:${issn}&select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
+        { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 2592000 } }
+      )
+      const jData = await jRes.json()
+      journal = jData.results?.[0] || null
     }
-    // fallback to filter
-    const res2 = await fetch(
-      `https://api.openalex.org/sources?filter=issn:${issn}&select=display_name,issn,cited_by_count,summary_stats,is_oa,publisher`,
-      { headers: { 'User-Agent': 'VeriJournals/1.0' }, next: { revalidate: 2592000 } }
-    )
-    const d2 = await res2.json()
-    return d2.results?.[0] || null
-  } catch { return null }
+    return { article, journal, issn, journalName }
+  } catch { return { article: null, journal: null, issn: null, journalName: null } }
 }
 
 export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ doi?: string }> }) {
@@ -45,15 +36,11 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
     </>
   )
 
-  const article = await getArticleData(doi)
-  
-  let journalData = null
-  const issn = article?.primary_location?.source?.issn_l || article?.primary_location?.source?.issn?.[0]
-  if (issn) journalData = await getJournalData(issn)
-
-  const journalName = article?.primary_location?.source?.display_name
+  const { article, journal, issn, journalName } = await getArticleAndJournal(doi)
   const authors = article?.authorships?.slice(0, 3).map((a: any) => a.author?.display_name).filter(Boolean).join(', ')
   const pubDate = article?.publication_date ? new Date(article.publication_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null
+  const hIndex = journal?.summary_stats?.h_index ?? null
+  const citations = journal?.cited_by_count ?? null
 
   return (
     <>
@@ -88,27 +75,22 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
 
             <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
               <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Published in Journal</h2>
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="font-semibold text-gray-900">{journalData?.display_name || journalName || '—'}</p>
-                  {issn && <p className="text-sm font-mono" style={{ color: '#007A44' }}>{issn}</p>}
-                  {journalData?.publisher && <p className="text-sm text-gray-500">{journalData.publisher}</p>}
-                </div>
-                {journalData?.is_oa && (
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">Open Access</span>
-                )}
+              <div className="mb-4">
+                <p className="font-semibold text-gray-900">{journal?.display_name || journalName || '—'}</p>
+                {issn && <p className="text-sm font-mono" style={{ color: '#007A44' }}>{issn}</p>}
+                {journal?.publisher && <p className="text-sm text-gray-500">{journal.publisher}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="p-3 rounded-xl text-center" style={{ background: '#F8FAFC' }}>
                   <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">H-Index</div>
-                  <div className="text-xl font-bold text-blue-600">{journalData?.summary_stats?.h_index ?? '—'}</div>
+                  <div className="text-xl font-bold text-blue-600">{hIndex !== null ? hIndex : '—'}</div>
                   <div className="text-xs text-gray-400">OpenAlex</div>
                 </div>
                 <div className="p-3 rounded-xl text-center" style={{ background: '#F8FAFC' }}>
                   <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total Citations</div>
                   <div className="text-xl font-bold text-purple-600">
-                    {journalData?.cited_by_count?.toLocaleString() ?? '—'}
+                    {citations !== null ? citations.toLocaleString() : '—'}
                   </div>
                   <div className="text-xs text-gray-400">all time</div>
                 </div>
