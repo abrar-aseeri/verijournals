@@ -43,6 +43,13 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
   const pubDate = article?.publication_date ? new Date(article.publication_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null
   const hIndex = journal?.summary_stats?.h_index ?? null
   const citations = journal?.cited_by_count ?? null
+  const meanCitedness = journal?.summary_stats?.['2yr_mean_citedness'] ? 
+    journal.summary_stats['2yr_mean_citedness'].toFixed(2) : null
+  const i10Index = journal?.summary_stats?.i10_index ?? null
+  const isInDoaj = journal?.is_in_doaj ?? false
+  const isCore = journal?.is_core ?? false
+  const apcUsd = journal?.apc_usd ?? null
+  const worksCount = journal?.works_count ?? null
 
   return (
     <>

@@ -17,12 +17,25 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
 
   if (!journal) notFound()
 
-  const trustColor = journal.trust_status === 'trusted' ? '#00A05A' : 
+  const isPredatory = journal.is_predatory === true
+  const trustColor = isPredatory ? '#FF3D5A' :
+                     journal.trust_status === 'trusted' ? '#00A05A' : 
                      journal.trust_status === 'high_risk' ? '#FF3D5A' : '#FFB020'
-  const trustBg = journal.trust_status === 'trusted' ? '#E6F5EE' : 
+  const trustBg = isPredatory ? '#FFE8EC' :
+                  journal.trust_status === 'trusted' ? '#E6F5EE' : 
                   journal.trust_status === 'high_risk' ? '#FFE8EC' : '#FEF3C7'
-  const trustLabel = journal.trust_status === 'trusted' ? 'Trusted' : 
+  const trustLabel = isPredatory ? '⚠️ Predatory Journal' :
+                     journal.trust_status === 'trusted' ? 'Trusted' : 
                      journal.trust_status === 'high_risk' ? 'High Risk' : 'Under Evaluation'
+
+  const quartileColor = (q: string | null) => {
+    if (!q) return { bg: '#F3F4F6', text: '#6B7280' }
+    if (q === 'Q1') return { bg: '#DCFCE7', text: '#15803D' }
+    if (q === 'Q2') return { bg: '#DBEAFE', text: '#1D4ED8' }
+    if (q === 'Q3') return { bg: '#FEF3C7', text: '#92400E' }
+    return { bg: '#FFE8EC', text: '#BE123C' }
+  }
+  const qc = quartileColor(journal.quartile)
 
   return (
     <>
@@ -31,6 +44,16 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
         <Link href="/search" className="text-sm text-gray-500 hover:text-gray-700 mb-6 inline-flex items-center gap-1">
           ← Back to Search
         </Link>
+
+        {isPredatory && (
+          <div className="mb-4 p-4 rounded-xl border-2 flex items-start gap-3" style={{ background: '#FFF1F2', borderColor: '#FF3D5A' }}>
+            <span className="text-2xl">⚠️</span>
+            <div>
+              <div className="font-bold text-red-700 text-sm mb-1">PREDATORY JOURNAL WARNING</div>
+              <div className="text-sm text-red-600">This journal has been identified as predatory or fraudulent. Publishing in this journal may harm your academic reputation. Verify through official sources before submitting.</div>
+            </div>
+          </div>
+        )}
         
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
           <div className="flex items-start justify-between mb-4">
@@ -42,10 +65,18 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
                 {journal.country && <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">{journal.country}</span>}
               </div>
             </div>
-            <span className="px-4 py-1.5 rounded-full text-sm font-semibold flex-shrink-0"
-              style={{ background: trustBg, color: trustColor }}>
-              {trustLabel}
-            </span>
+            <div className="flex flex-col items-end gap-2">
+              <span className="px-4 py-1.5 rounded-full text-sm font-semibold flex-shrink-0"
+                style={{ background: trustBg, color: trustColor }}>
+                {trustLabel}
+              </span>
+              {journal.quartile && (
+                <span className="px-3 py-1 rounded-full text-sm font-bold flex-shrink-0"
+                  style={{ background: qc.bg, color: qc.text }}>
+                  SCImago {journal.quartile}
+                </span>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-4 gap-4 p-4 rounded-xl mb-4" style={{ background: '#F8FAFC' }}>
@@ -73,15 +104,26 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
+          {journal.quartile && (
+            <div className="mb-4 p-4 rounded-xl border" style={{ background: qc.bg, borderColor: qc.text + '33' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: qc.text }}>SCImago Journal Ranking</div>
+                  <div className="text-sm text-gray-600">Best Quartile (2023)</div>
+                </div>
+                <div className="text-4xl font-black" style={{ color: qc.text }}>{journal.quartile}</div>
+              </div>
+            </div>
+          )}
+
           <div className="rounded-xl border border-gray-100 overflow-hidden">
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Metrics requiring institutional access</span>
             </div>
-            <div className="grid grid-cols-4 divide-x divide-gray-100">
+            <div className="grid grid-cols-3 divide-x divide-gray-100">
               {[
                 { label: 'Impact Factor', source: 'Clarivate JCR' },
                 { label: 'CiteScore', source: 'Scopus' },
-                { label: 'Quartile (Q1-Q4)', source: 'SCImago' },
                 { label: 'JCI', source: 'Web of Science' },
               ].map(m => (
                 <div key={m.label} className="p-4 text-center">
@@ -90,7 +132,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
                   <div className="text-xs text-gray-400 mt-1">{m.source}</div>
                   <div className="mt-2">
                     <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ background: '#FEF3C7', color: '#92400E' }}>
-                      Institutional Access
+                      Institutional
                     </span>
                   </div>
                 </div>
