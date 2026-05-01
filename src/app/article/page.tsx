@@ -163,19 +163,31 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                       <div className="text-xs text-gray-400 mt-1">SCImago 2023</div>
                     </div>
                     {[
-                      { label: "Impact Factor", source: "Clarivate JCR" },
-                      { label: "CiteScore", source: "Scopus" },
-                      { label: "JCI", source: "Web of Science" },
+                      { 
+                        label: "Impact Factor", 
+                        source: "Clarivate JCR",
+                        url: `https://jcr.clarivate.com/jcr/browse-journals?q=${encodeURIComponent(journalName || issn || '')}`
+                      },
+                      { 
+                        label: "CiteScore", 
+                        source: "Scopus",
+                        url: `https://www.scopus.com/sources.uri?name=${encodeURIComponent(journalName || '')}`
+                      },
+                      { 
+                        label: "JCI", 
+                        source: "Web of Science",
+                        url: `https://mjl.clarivate.com/search-results?issn=${issn || ''}`
+                      },
                     ].map(m => (
                       <div key={m.label} className="p-4 text-center">
                         <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">{m.label}</div>
-                        <div className="text-lg font-bold text-gray-300">—</div>
-                        <div className="text-xs text-gray-400 mt-1">{m.source}</div>
-                        <div className="mt-2">
-                          <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ background: "#FEF3C7", color: "#92400E" }}>
-                            Institutional
-                          </span>
-                        </div>
+                        <div className="text-lg font-bold text-gray-300 mb-1">—</div>
+                        <div className="text-xs text-gray-400 mb-2">{m.source}</div>
+                        <a href={m.url} target="_blank" rel="noopener noreferrer"
+                          className="inline-block px-2 py-1 rounded text-xs font-medium transition-colors"
+                          style={{ background: "#E6F5EE", color: "#007A44" }}>
+                          Search →
+                        </a>
                       </div>
                     ))}
                   </div>
