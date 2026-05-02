@@ -5,6 +5,27 @@ import { createClient } from "@supabase/supabase-js"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+async function getScopusMetrics(issn: string) {
+  try {
+    const clean = issn.replace('-', '')
+    const res = await fetch(
+      `https://api.elsevier.com/content/serial/title/issn/${clean}`,
+      { headers: { 'X-ELS-APIKey': SCOPUS_API_KEY, 'Accept': 'application/json' }, cache: 'no-store' }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const entry = data?.['serial-metadata-response']?.entry?.[0]
+    if (!entry) return null
+    return {
+      citeScore: entry.citeScoreYearInfoList?.citeScoreCurrentMetric ?? null,
+      citeScoreYear: entry.citeScoreYearInfoList?.citeScoreCurrentMetricYear ?? null,
+      sjr: entry.SJRList?.SJR?.[0]?.['$'] ?? null,
+      sjrYear: entry.SJRList?.SJR?.[0]?.['@year'] ?? null,
+      snip: entry.SNIPList?.SNIP?.[0]?.['$'] ?? null,
+    }
+  } catch { return null }
+}
+
 async function getArticleAndJournal(doi: string) {
   try {
     const res = await fetch(
@@ -181,8 +202,17 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                     ].map(m => (
                       <div key={m.label} className="p-4 text-center">
                         <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">{m.label}</div>
-                        <div className="text-lg font-bold text-gray-300 mb-1">—</div>
-                        <div className="text-xs text-gray-400 mb-2">{m.source}</div>
+                        {(m as any).value ? (
+                          <>
+                            <div className="text-lg font-bold text-gray-800 mb-0.5">{(m as any).value}</div>
+                            <div className="text-xs text-gray-400 mb-2">{m.source} {(m as any).year}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-lg font-bold text-gray-300 mb-1">—</div>
+                            <div className="text-xs text-gray-400 mb-2">{m.source}</div>
+                          </>
+                        )}
                         <a href={m.url} target="_blank" rel="noopener noreferrer"
                           className="inline-block px-2 py-1 rounded text-xs font-medium transition-colors"
                           style={{ background: "#E6F5EE", color: "#007A44" }}>
