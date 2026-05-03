@@ -81,6 +81,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
   )
 
   const { article, journal, issn, journalName, quartile, isPredatory } = await getArticleAndJournal(doi)
+  const scopus = issn ? await getScopusMetrics(issn) : null
   const authors = article?.authorships?.slice(0, 3).map((a: any) => a.author?.display_name).filter(Boolean).join(", ")
   const pubDate = article?.publication_date
     ? new Date(article.publication_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
@@ -189,10 +190,12 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                         source: "Clarivate JCR",
                         url: `https://jcr.clarivate.com/jcr/browse-journals?q=${encodeURIComponent(journalName || issn || '')}`
                       },
-                      { 
-                        label: "CiteScore", 
+                      {
+                        label: "CiteScore",
                         source: "Scopus",
-                        url: `https://www.scopus.com/sources.uri?name=${encodeURIComponent(journalName || '')}`
+                        url: `https://www.scopus.com/sources.uri?name=${encodeURIComponent(journalName || '')}`,
+                        value: scopus?.citeScore ?? null,
+                        year: scopus?.citeScoreYear ?? null,
                       },
                       { 
                         label: "JCI", 
