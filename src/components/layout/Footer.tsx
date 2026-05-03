@@ -1,8 +1,8 @@
 export default function Footer() {
   return (
     <footer
-      style={{ background: '#1B5E20' }}
-      className="w-full py-8 px-6 mt-auto"
+      style={{ background: '#1B5E20', paddingTop: '40px', paddingBottom: '40px' }}
+      className="w-full px-6 mt-auto"
     >
       <div className="max-w-4xl mx-auto flex flex-col gap-4 text-center">
         <div

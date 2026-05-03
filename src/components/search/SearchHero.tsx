@@ -32,7 +32,7 @@ export default function SearchHero() {
   }
 
   return (
-    <section style={{ background: '#FFFFFF' }} className="w-full pt-14 pb-12 px-6">
+    <section style={{ background: '#F8F8F8' }} className="w-full pt-14 pb-12 px-6">
       <div className="max-w-3xl mx-auto text-center">
         <h1
           dir="rtl"
@@ -87,8 +87,8 @@ export default function SearchHero() {
           />
           <button
             onClick={handleSearch}
-            className="px-8 text-base flex items-center gap-2"
-            style={{ background: '#1B5E20', color: '#FFFFFF', fontWeight: 700, height: '100%', border: 0 }}
+            className="vj-search-btn px-8 text-base flex items-center gap-2"
+            style={{ color: '#FFFFFF', fontWeight: 700, height: '100%', border: 0, borderRadius: '6px' }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5.5" stroke="#fff" strokeWidth="1.5"/>

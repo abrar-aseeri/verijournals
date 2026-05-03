@@ -121,3 +121,11 @@ h1, h2, h3, h4, h5, h6 {
   color: #43A047;
   font-weight: 700;
 }
+
+.vj-search-btn {
+  background: #1B5E20;
+  transition: background-color 150ms ease;
+}
+.vj-search-btn:hover {
+  background: #14491A;
+}

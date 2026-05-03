@@ -19,11 +19,12 @@ export default function RootLayout({
       >
         <div
           dir="rtl"
-          className="w-full text-center py-1.5 px-4 text-xs"
+          className="w-full text-center py-1.5 px-4"
           style={{
-            background: '#F5F5F5',
+            background: '#FFFBE6',
             color: '#555555',
             fontWeight: 500,
+            fontSize: '13px',
             borderBottom: '1px solid #E5E5E5',
           }}
         >

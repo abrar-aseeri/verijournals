@@ -18,7 +18,7 @@ export default function Navbar() {
 
       <nav
         dir="rtl"
-        style={{ background: '#2E7D32', height: '44px' }}
+        style={{ background: '#2E7D32', height: '44px', borderBottom: '2px solid #1B5E20' }}
         className="w-full px-6 flex items-center"
       >
         <ul className="flex items-center text-white" style={{ fontWeight: 500, fontSize: '15px', gap: '40px' }}>

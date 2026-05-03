@@ -28,6 +28,7 @@ export default function HomePage() {
           dir="rtl"
           style={{
             background: '#FFFFFF',
+            borderTop: '1px solid #E5E5E5',
             borderBottom: '1px solid #E5E5E5',
             padding: '40px 24px',
           }}
