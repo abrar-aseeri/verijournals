@@ -32,26 +32,31 @@ export default function SearchHero() {
   }
 
   return (
-    <section style={{ background: '#2E7D32' }} className="w-full pt-14 pb-12 px-6">
+    <section style={{ background: '#FFFFFF' }} className="w-full pt-14 pb-12 px-6">
       <div className="max-w-3xl mx-auto text-center">
         <h1
           dir="rtl"
           className="leading-tight"
-          style={{ color: '#FFFFFF', fontSize: '32px', fontWeight: 700 }}
+          style={{ color: '#1B5E20', fontSize: '32px', fontWeight: 700 }}
         >
           بوابة التحقق من المجلات العلمية
         </h1>
         <p
           dir="rtl"
           className="mt-3"
-          style={{ color: 'rgba(255,255,255,0.85)', fontSize: '16px', fontWeight: 400 }}
+          style={{ color: '#666666', fontSize: '16px', fontWeight: 400 }}
         >
           ابحث عن أي مجلة علمية للتحقق من موثوقيتها
         </p>
 
         <div
           className="mt-7 bg-white overflow-hidden flex"
-          style={{ borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', height: '56px' }}
+          style={{
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            border: '1px solid #E5E5E5',
+            height: '56px',
+          }}
         >
           <select
             value={searchType}
@@ -98,11 +103,11 @@ export default function SearchHero() {
             <button
               key={ex.label}
               onClick={() => { setQuery(ex.label); setSearchType(ex.type) }}
-              className="text-xs px-3 py-1.5 transition-opacity hover:opacity-80"
+              className="text-xs px-3 py-1.5 transition-colors"
               style={{
-                background: 'rgba(255,255,255,0.15)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: '#FFFFFF',
+                background: '#F5F5F5',
+                border: '1px solid #E5E5E5',
+                color: '#1B5E20',
                 fontWeight: 500,
                 borderRadius: '999px',
               }}

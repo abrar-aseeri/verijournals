@@ -19,15 +19,15 @@ export default function RootLayout({
       >
         <div
           dir="rtl"
-          className="w-full text-center py-2 px-4 text-sm"
+          className="w-full text-center py-1.5 px-4 text-xs"
           style={{
-            background: '#FFF9C4',
-            color: '#1A1A1A',
-            fontWeight: 600,
-            borderBottom: '1px solid rgba(0,0,0,0.08)',
+            background: '#F5F5F5',
+            color: '#555555',
+            fontWeight: 500,
+            borderBottom: '1px solid #E5E5E5',
           }}
         >
-          ⚠️ الموقع في مرحلة تجريبية - جميع البيانات للاستئناس فقط
+          الموقع في مرحلة تجريبية — جميع البيانات للاستئناس فقط
         </div>
         <div className="min-h-screen flex flex-col">
           {children}

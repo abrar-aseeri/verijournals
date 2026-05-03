@@ -5,12 +5,12 @@ export default function Navbar() {
     <>
       <header
         dir="rtl"
-        style={{ background: '#FFFFFF', borderBottom: '1px solid #E5E5E5', height: '80px' }}
+        style={{ background: '#FFFFFF', borderBottom: '3px solid #2E7D32', height: '100px' }}
         className="w-full px-6 flex items-center"
       >
         <Link
           href="/"
-          style={{ color: '#1B5E20', fontWeight: 700, fontSize: '22px' }}
+          style={{ color: '#1B5E20', fontWeight: 700, fontSize: '24px' }}
         >
           VeriJournals
         </Link>
@@ -18,7 +18,7 @@ export default function Navbar() {
 
       <nav
         dir="rtl"
-        style={{ background: '#2E7D32', height: '48px' }}
+        style={{ background: '#2E7D32', height: '44px' }}
         className="w-full px-6 flex items-center"
       >
         <ul className="flex items-center text-white" style={{ fontWeight: 500, fontSize: '15px', gap: '40px' }}>
