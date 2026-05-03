@@ -102,7 +102,7 @@ async function getArticleAndJournal(doi: string) {
   }
 
   if (!article) {
-    return { article: null, journal: null, issn: null, journalName: null, quartile: null, isPredatory: false }
+    return { article: null, journal: null, issn: null, journalName: null, quartile: null, isPredatory: false, sjrScore: null }
   }
 
   const issn = article?.primary_location?.source?.issn_l || article?.primary_location?.source?.issn?.[0]
@@ -124,22 +124,24 @@ async function getArticleAndJournal(doi: string) {
 
   let quartile = null
   let isPredatory = false
+  let sjrScore: number | null = null
   if (issn) {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey)
       const { data } = await supabase
         .from("journals")
-        .select("quartile, is_predatory")
+        .select("quartile, is_predatory, sjr_score")
         .eq("issn", issn)
         .limit(1)
       if (data && data.length > 0) {
         quartile = data[0].quartile
         isPredatory = data[0].is_predatory ?? false
+        sjrScore = data[0].sjr_score ?? null
       }
     } catch {}
   }
 
-  return { article, journal, issn, journalName, quartile, isPredatory }
+  return { article, journal, issn, journalName, quartile, isPredatory, sjrScore }
 }
 
 export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ doi?: string }> }) {
@@ -154,7 +156,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
     </>
   )
 
-  const { article, journal, issn, journalName, quartile, isPredatory } = await getArticleAndJournal(doi)
+  const { article, journal, issn, journalName, quartile, isPredatory, sjrScore } = await getArticleAndJournal(doi)
   const [scopus, retraction, isDoaj] = await Promise.all([
     issn ? getScopusMetrics(issn) : Promise.resolve(null),
     getRetraction(doi),
@@ -171,6 +173,8 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
     : null
   const hIndex = journal?.summary_stats?.h_index ?? null
   const citations = journal?.cited_by_count ?? null
+  const twoYrCitednessRaw = journal?.summary_stats?.["2yr_mean_citedness"]
+  const twoYrCitedness = typeof twoYrCitednessRaw === "number" ? twoYrCitednessRaw.toFixed(2) : null
 
   return (
     <>
@@ -312,36 +316,48 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                     </div>
 
                     <div className="p-4 text-center">
-                      <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Impact Factor</div>
-                      <div className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold mb-2"
-                        style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FCD34D" }}>
-                        🔒 Requires institutional access
-                      </div>
-                      <div className="text-xs text-gray-400 mb-2">Clarivate JCR</div>
+                      <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">2yr Citedness</div>
+                      {twoYrCitedness ? (
+                        <>
+                          <div className="text-lg font-bold text-gray-800 mb-0.5">{twoYrCitedness}</div>
+                          <div className="text-xs text-gray-400 mb-2">OpenAlex</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-lg font-bold text-gray-300 mb-1">—</div>
+                          <div className="text-xs text-gray-400 mb-2">OpenAlex</div>
+                        </>
+                      )}
                       <a
-                        href={`https://jcr.clarivate.com/jcr/browse-journals?q=${encodeURIComponent(journalName || issn || '')}`}
+                        href={journal?.id || `https://openalex.org/sources?search=${encodeURIComponent(journalName || issn || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
                         style={{ background: "#E6F5EE", color: "#007A44" }}
                       >
-                        Search JCR →
+                        Source →
                       </a>
                     </div>
 
                     <div className="p-4 text-center">
-                      <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">JCI</div>
-                      <div className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold mb-2"
-                        style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FCD34D" }}>
-                        🔒 Requires institutional access
-                      </div>
-                      <div className="text-xs text-gray-400 mb-2">Web of Science</div>
+                      <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">SJR Score</div>
+                      {sjrScore != null ? (
+                        <>
+                          <div className="text-lg font-bold text-gray-800 mb-0.5">{Number(sjrScore).toFixed(3)}</div>
+                          <div className="text-xs text-gray-400 mb-2">SCImago 2023</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-lg font-bold text-gray-300 mb-1">—</div>
+                          <div className="text-xs text-gray-400 mb-2">SCImago 2023</div>
+                        </>
+                      )}
                       <a
-                        href={`https://mjl.clarivate.com/search-results?issn=${issn || ''}`}
+                        href={`https://www.scimagojr.com/journalsearch.php?q=${encodeURIComponent(issn || journalName || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
                         style={{ background: "#E6F5EE", color: "#007A44" }}
                       >
-                        Search WoS →
+                        SCImago →
                       </a>
                     </div>
                   </div>
