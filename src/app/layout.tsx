@@ -28,7 +28,7 @@ export default function RootLayout({
             borderBottom: '1px solid #E5E5E5',
           }}
         >
-          الموقع في مرحلة تجريبية — جميع البيانات للاستئناس فقط
+          هذا الموقع قيد التجربة، وقد تحتوي البيانات على أخطاء أو نقص أو تأخير في التحديث، ولا يُعتمد عليها لاتخاذ قرارات، وباستخدامك للموقع فإنك توافق على ذلك.
         </div>
         <div className="min-h-screen flex flex-col">
           {children}
