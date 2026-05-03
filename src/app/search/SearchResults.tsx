@@ -35,7 +35,7 @@ export default function SearchResults() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 rounded-full border-2 border-green-500 border-t-transparent animate-spin"/>
+            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#1B5E20', borderTopColor: 'transparent' }}/>
           </div>
         ) : results.length === 0 ? (
           <div className="text-center py-20">
@@ -48,13 +48,14 @@ export default function SearchResults() {
               <Link
                 key={journal.id}
                 href={`/journal/${journal.id}`}
-                className="block bg-white border border-gray-200 rounded-xl p-5 hover:border-green-300 transition-colors"
+                className="block bg-white border border-gray-200 rounded-xl p-5 transition-colors hover:border-[#1B5E20]"
+                style={{ borderTop: '3px solid #1B5E20' }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h2 className="font-semibold text-gray-900 text-base mb-1">{journal.title}</h2>
                     <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
-                      {journal.issn && <span className="font-mono" style={{ color: '#007A44' }}>{formatISSN(journal.issn)}</span>}
+                      {journal.issn && <span className="font-mono" style={{ color: '#1B5E20' }}>{formatISSN(journal.issn)}</span>}
                       {journal.publisher && <span>{journal.publisher}</span>}
                       {journal.country && <span>{journal.country}</span>}
                     </div>

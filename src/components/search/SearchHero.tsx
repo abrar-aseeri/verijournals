@@ -32,33 +32,35 @@ export default function SearchHero() {
   }
 
   return (
-    <div style={{ background: '#0A1628' }} className="w-full py-16 px-6">
+    <div style={{ background: '#F5F5F5' }} className="w-full py-12 px-6">
       <div className="max-w-3xl mx-auto">
         <div
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-6"
-          style={{ background: 'rgba(0,160,90,0.18)', border: '0.5px solid rgba(0,160,90,0.35)', color: '#5DD9A4' }}
+          dir="rtl"
+          className="text-center mb-8"
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <circle cx="5" cy="5" r="4" stroke="#5DD9A4" strokeWidth="1.2"/>
-            <path d="M5 3v2.5L6.5 7" stroke="#5DD9A4" strokeWidth="1.1" strokeLinecap="round"/>
-          </svg>
-          Free · Open · Evidence-based
+          <p className="text-base mb-2" style={{ color: '#1B5E20', fontWeight: 600 }}>
+            ابحث عن أي مجلة علمية للتحقق من موثوقيتها ومعلوماتها
+          </p>
+          <p className="text-sm" style={{ color: '#1A1A1A', opacity: 0.7 }}>
+            Search by ISSN, DOI, journal title, or publisher.
+          </p>
         </div>
 
-        <h1 className="text-3xl font-bold text-white mb-3 leading-tight">
-          Verify any scientific journal<br />
-          <span style={{ color: '#5DD9A4' }}>before you publish or cite.</span>
-        </h1>
-        <p className="text-sm mb-8" style={{ color: 'rgba(255,255,255,0.5)' }}>
-          Search by ISSN, DOI, journal title, or publisher. Get indexing status, trust score, and risk signals instantly.
-        </p>
-
-        <div className="bg-white rounded-xl overflow-hidden flex shadow-lg">
+        <div
+          className="bg-white rounded-xl overflow-hidden flex shadow-md"
+          style={{ borderTop: '3px solid #1B5E20' }}
+        >
           <select
             value={searchType}
             onChange={(e) => setSearchType(e.target.value)}
-            className="h-12 px-3 text-sm font-semibold outline-none cursor-pointer"
-            style={{ borderRight: '0.5px solid #E5E7EB', color: '#007A44', minWidth: '140px' }}
+            className="h-12 px-3 text-sm outline-none cursor-pointer"
+            style={{
+              borderRight: '1px solid #E5E7EB',
+              color: '#1B5E20',
+              fontWeight: 600,
+              minWidth: '140px',
+              background: '#FFFFFF',
+            }}
           >
             {searchTypes.map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -70,12 +72,12 @@ export default function SearchHero() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="e.g. 1234-5678 or journal name…"
-            className="flex-1 h-12 px-4 text-sm outline-none text-gray-800"
+            className="flex-1 h-12 px-4 text-sm outline-none"
+            style={{ color: '#1A1A1A' }}
           />
           <button
             onClick={handleSearch}
-            className="h-12 px-6 text-sm font-semibold text-white flex items-center gap-2"
-            style={{ background: '#00A05A' }}
+            className="btn-primary h-12 px-6 text-sm flex items-center gap-2"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5.5" stroke="#fff" strokeWidth="1.5"/>
@@ -85,13 +87,18 @@ export default function SearchHero() {
           </button>
         </div>
 
-        <div className="mt-4 flex gap-2 flex-wrap">
+        <div className="mt-4 flex gap-2 flex-wrap justify-center">
           {examples.map((ex) => (
             <button
               key={ex.label}
               onClick={() => { setQuery(ex.label); setSearchType(ex.type) }}
-              className="text-xs px-3 py-1.5 rounded-full"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '0.5px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.55)' }}
+              className="text-xs px-3 py-1.5 rounded-full transition-colors"
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid #1B5E20',
+                color: '#1B5E20',
+                fontWeight: 500,
+              }}
             >
               {ex.label}
             </button>

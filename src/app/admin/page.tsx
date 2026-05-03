@@ -13,7 +13,7 @@ export default async function AdminPage() {
   ])
 
   return (
-    <div className="min-h-screen" style={{ background: '#0A1628' }}>
+    <div className="min-h-screen" style={{ background: '#1B5E20' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -27,8 +27,8 @@ export default async function AdminPage() {
 
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { label: 'Total Journals', value: journalsCount || 0, color: '#00A05A' },
-            { label: 'Registered Users', value: usersCount || 0, color: '#5DD9A4' },
+            { label: 'Total Journals', value: journalsCount || 0, color: '#1B5E20' },
+            { label: 'Registered Users', value: usersCount || 0, color: '#4CAF50' },
             { label: 'Error Reports', value: reportsCount || 0, color: '#FFB020' },
           ].map(stat => (
             <div key={stat.label} className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -59,7 +59,7 @@ export default async function AdminPage() {
                   <td className="px-4 py-3">
                     <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{
                       background: r.status === 'pending' ? 'rgba(255,176,32,0.15)' : 'rgba(0,160,90,0.15)',
-                      color: r.status === 'pending' ? '#FFB020' : '#00A05A'
+                      color: r.status === 'pending' ? '#FFB020' : '#1B5E20'
                     }}>{r.status}</span>
                   </td>
                   <td className="px-4 py-3 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>

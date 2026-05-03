@@ -62,7 +62,7 @@ export default function ErrorReportButton({ journalId, journalTitle }: { journal
       <div className="flex gap-2">
         <button onClick={handleSubmit} disabled={loading || !type || !description}
           className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-          style={{ background: loading ? '#9CA3AF' : '#0A1628' }}>
+          style={{ background: loading ? '#9CA3AF' : '#1B5E20' }}>
           {loading ? 'Submitting...' : 'Submit Report'}
         </button>
         <button onClick={() => setOpen(false)}

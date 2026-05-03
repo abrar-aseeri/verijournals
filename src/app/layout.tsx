@@ -1,13 +1,9 @@
 import type { Metadata } from 'next'
-import { Cairo, DM_Sans } from 'next/font/google'
 import './globals.css'
 
-const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
-const cairo = Cairo({ subsets: ['arabic'], variable: '--font-cairo' })
-
 export const metadata: Metadata = {
-  title: 'VeriJournals — Journal Verification Platform',
-  description: 'Verify scientific journals and articles. Powered by the Research & Innovation Institute — Ministry of Defense.',
+  title: 'VeriJournals — بوابة التحقق من المجلات العلمية',
+  description: 'بوابة رسمية للتحقق من المجلات العلمية. Verify scientific journals and articles.',
 }
 
 export default function RootLayout({
@@ -16,8 +12,23 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" dir="ltr">
-      <body className={`${dmSans.variable} ${cairo.variable} font-sans antialiased bg-gray-50 text-gray-900`}>
+    <html lang="ar" dir="ltr">
+      <body
+        className="antialiased"
+        style={{ background: '#F5F5F5', color: '#1A1A1A' }}
+      >
+        <div
+          dir="rtl"
+          className="w-full text-center py-2 px-4 text-sm"
+          style={{
+            background: '#FFF9C4',
+            color: '#1A1A1A',
+            fontWeight: 600,
+            borderBottom: '1px solid rgba(0,0,0,0.08)',
+          }}
+        >
+          ⚠️ الموقع في مرحلة تجريبية - جميع البيانات للاستئناس فقط
+        </div>
         <div className="min-h-screen flex flex-col">
           {children}
         </div>

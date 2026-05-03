@@ -21,17 +21,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0A1628' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#1B5E20' }}>
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-3 mb-8 justify-center">
-          <div style={{ background: '#00A05A' }} className="w-9 h-9 rounded-xl flex items-center justify-center">
+          <div style={{ background: '#1B5E20' }} className="w-9 h-9 rounded-xl flex items-center justify-center">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
               <path d="M10 2L3 6v8l7 4 7-4V6L10 2z" stroke="#fff" strokeWidth="1.5" fill="none"/>
               <path d="M10 2v18M3 6l7 4 7-4" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round"/>
             </svg>
           </div>
           <div>
-            <div className="text-white font-bold text-lg">Veri<span style={{ color: '#5DD9A4' }}>Journals</span></div>
+            <div className="text-white font-bold text-lg">Veri<span style={{ color: '#4CAF50' }}>Journals</span></div>
             <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Research & Innovation Institute — MOD</div>
           </div>
         </div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
               onClick={handleLogin}
               disabled={loading}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white mt-1"
-              style={{ background: loading ? '#9CA3AF' : '#00A05A' }}
+              style={{ background: loading ? '#9CA3AF' : '#1B5E20' }}
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -78,7 +78,7 @@ export default function LoginPage() {
 
           <p className="text-center text-xs text-gray-500 mt-4">
             Don't have an account?{' '}
-            <Link href="/register" className="font-medium" style={{ color: '#00A05A' }}>Register</Link>
+            <Link href="/register" className="font-medium" style={{ color: '#1B5E20' }}>Register</Link>
           </p>
         </div>
       </div>

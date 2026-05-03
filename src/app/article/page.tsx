@@ -181,7 +181,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-8">
         <div className="mb-4">
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-mono font-semibold" style={{ background: "#E6F5EE", color: "#007A44" }}>
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-mono font-semibold" style={{ background: "#E8F5E9", color: "#1B5E20" }}>
             DOI: {doi}
           </span>
         </div>
@@ -219,13 +219,13 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
               </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: "3px solid #1B5E20" }}>
               <h1 className="text-xl font-bold text-gray-900 mb-3">{article.title}</h1>
               <div className="flex flex-wrap gap-2 mb-3">
                 {retracted ? (
                   <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#FFE8EC", color: "#FF3D5A" }}>Retracted</span>
                 ) : (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#E6F5EE", color: "#00A05A" }}>Active — No retractions or corrections</span>
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#E8F5E9", color: "#1B5E20" }}>Active — No retractions or corrections</span>
                 )}
                 {article.cited_by_count > 0 && (
                   <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600">
@@ -238,7 +238,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
             </div>
 
             {(journalName || journal) && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: "3px solid #1B5E20" }}>
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Published in Journal</div>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <div className="font-bold text-gray-900 text-lg">{journalName || journal?.display_name}</div>
@@ -247,14 +247,14 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                       href={`https://doaj.org/toc/${encodeURIComponent(issn || '')}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                      style={{ background: "#E6F5EE", color: "#00723D", border: "1px solid #00A05A" }}
+                      style={{ background: "#E8F5E9", color: "#1B5E20", border: "1px solid #2E7D32" }}
                       title="Verified open access by DOAJ"
                     >
                       <span aria-hidden>✓</span> DOAJ Open Access
                     </a>
                   )}
                 </div>
-                {issn && <div className="text-sm font-mono mb-4" style={{ color: "#007A44" }}>{issn}</div>}
+                {issn && <div className="text-sm font-mono mb-4" style={{ color: "#1B5E20" }}>{issn}</div>}
 
                 {(hIndex || citations) && (
                   <div className="grid grid-cols-2 gap-4 p-4 rounded-xl mb-4" style={{ background: "#F8FAFC" }}>
@@ -284,7 +284,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                       <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">SCImago Quartile</div>
                       {quartile ? (
                         <div className="text-lg font-bold" style={{
-                          color: quartile === "Q1" ? "#00A05A" : quartile === "Q2" ? "#2563EB" : quartile === "Q3" ? "#D97706" : "#DC2626"
+                          color: quartile === "Q1" ? "#1B5E20" : quartile === "Q2" ? "#2563EB" : quartile === "Q3" ? "#D97706" : "#DC2626"
                         }}>{quartile}</div>
                       ) : (
                         <div className="text-lg font-bold text-gray-300">—</div>
@@ -309,7 +309,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                         href={`https://www.scopus.com/sources.uri?name=${encodeURIComponent(journalName || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: "#E6F5EE", color: "#007A44" }}
+                        style={{ background: "#E8F5E9", color: "#1B5E20" }}
                       >
                         Search →
                       </a>
@@ -332,7 +332,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                         href={journal?.id || `https://openalex.org/sources?search=${encodeURIComponent(journalName || issn || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: "#E6F5EE", color: "#007A44" }}
+                        style={{ background: "#E8F5E9", color: "#1B5E20" }}
                       >
                         Source →
                       </a>
@@ -355,7 +355,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                         href={`https://www.scimagojr.com/journalsearch.php?q=${encodeURIComponent(issn || journalName || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: "#E6F5EE", color: "#007A44" }}
+                        style={{ background: "#E8F5E9", color: "#1B5E20" }}
                       >
                         SCImago →
                       </a>

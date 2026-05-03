@@ -19,7 +19,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
 
   const isPredatory = journal.is_predatory === true
   const trustColor = isPredatory ? '#FF3D5A' :
-                     journal.trust_status === 'trusted' ? '#00A05A' : 
+                     journal.trust_status === 'trusted' ? '#1B5E20' : 
                      journal.trust_status === 'high_risk' ? '#FF3D5A' : '#FFB020'
   const trustBg = isPredatory ? '#FFE8EC' :
                   journal.trust_status === 'trusted' ? '#E6F5EE' : 
@@ -55,12 +55,12 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           </div>
         )}
         
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: '3px solid #1B5E20' }}>
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 pr-4">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{journal.title}</h1>
               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                {journal.issn && <span className="font-mono font-semibold" style={{ color: '#007A44' }}>{journal.issn}</span>}
+                {journal.issn && <span className="font-mono font-semibold" style={{ color: '#1B5E20' }}>{journal.issn}</span>}
                 {journal.publisher && <span>{journal.publisher}</span>}
                 {journal.country && <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">{journal.country}</span>}
               </div>
@@ -141,7 +141,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: '3px solid #1B5E20' }}>
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Journal Details</h2>
           <div className="grid grid-cols-2 gap-3">
             {journal.open_access && (
