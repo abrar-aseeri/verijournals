@@ -10,7 +10,7 @@ async function getScopusMetrics(issn: string) {
     const clean = issn.replace('-', '')
     const res = await fetch(
       `https://api.elsevier.com/content/serial/title/issn/${clean}`,
-      { headers: { 'X-ELS-APIKey': SCOPUS_API_KEY, 'Accept': 'application/json' }, cache: 'no-store' }
+      { headers: { 'X-ELS-APIKey': process.env.SCOPUS_API_KEY || '1e8c46f1b5097b39a58bf29e42199ba6', 'Accept': 'application/json' }, cache: 'no-store' }
     )
     if (!res.ok) return null
     const data = await res.json()
