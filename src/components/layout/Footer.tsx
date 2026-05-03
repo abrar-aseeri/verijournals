@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer style={{ background: '#1B5E20' }} className="w-full mt-auto">
+    <footer style={{ background: '#1E3D2F' }} className="w-full mt-auto">
       <div style={{ paddingTop: '40px', paddingBottom: '40px' }} className="px-6">
         <div className="max-w-4xl mx-auto flex flex-col gap-4 text-center">
           <div
