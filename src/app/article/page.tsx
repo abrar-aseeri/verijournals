@@ -219,7 +219,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
               </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: "3px solid #1B5E20" }}>
+            <div className="vj-card p-6 mb-4">
               <h1 className="text-xl font-bold text-gray-900 mb-3">{article.title}</h1>
               <div className="flex flex-wrap gap-2 mb-3">
                 {retracted ? (
@@ -238,7 +238,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
             </div>
 
             {(journalName || journal) && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: "3px solid #1B5E20" }}>
+              <div className="vj-card p-6 mb-4">
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Published in Journal</div>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <div className="font-bold text-gray-900 text-lg">{journalName || journal?.display_name}</div>
@@ -366,7 +366,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
             )}
           </>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+          <div className="vj-card p-8 text-center">
             <p className="text-gray-500">Article not found for this DOI.</p>
           </div>
         )}

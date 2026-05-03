@@ -32,30 +32,26 @@ export default function SearchHero() {
   }
 
   return (
-    <div style={{ background: '#F5F5F5' }} className="w-full py-12 px-6">
-      <div className="max-w-3xl mx-auto">
-        <div
+    <section style={{ background: '#2E7D32' }} className="w-full py-16 px-6">
+      <div className="max-w-3xl mx-auto text-center">
+        <h1
           dir="rtl"
-          className="text-center mb-8"
+          className="leading-tight"
+          style={{ color: '#FFFFFF', fontSize: '32px', fontWeight: 700 }}
         >
-          <p className="text-base mb-2" style={{ color: '#1B5E20', fontWeight: 600 }}>
-            ابحث عن أي مجلة علمية للتحقق من موثوقيتها ومعلوماتها
-          </p>
-          <p className="text-sm" style={{ color: '#1A1A1A', opacity: 0.7 }}>
-            Search by ISSN, DOI, journal title, or publisher.
-          </p>
-        </div>
+          بوابة التحقق من المجلات العلمية
+        </h1>
 
         <div
-          className="bg-white rounded-xl overflow-hidden flex shadow-md"
-          style={{ borderTop: '3px solid #1B5E20' }}
+          className="mt-8 bg-white overflow-hidden flex"
+          style={{ borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
         >
           <select
             value={searchType}
             onChange={(e) => setSearchType(e.target.value)}
             className="h-12 px-3 text-sm outline-none cursor-pointer"
             style={{
-              borderRight: '1px solid #E5E7EB',
+              borderRight: '1px solid #E5E5E5',
               color: '#1B5E20',
               fontWeight: 600,
               minWidth: '140px',
@@ -72,12 +68,13 @@ export default function SearchHero() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="e.g. 1234-5678 or journal name…"
-            className="flex-1 h-12 px-4 text-sm outline-none"
+            className="flex-1 h-12 px-4 text-sm outline-none text-left"
             style={{ color: '#1A1A1A' }}
           />
           <button
             onClick={handleSearch}
-            className="btn-primary h-12 px-6 text-sm flex items-center gap-2"
+            className="h-12 px-6 text-sm flex items-center gap-2"
+            style={{ background: '#1B5E20', color: '#FFFFFF', fontWeight: 600 }}
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5.5" stroke="#fff" strokeWidth="1.5"/>
@@ -92,12 +89,13 @@ export default function SearchHero() {
             <button
               key={ex.label}
               onClick={() => { setQuery(ex.label); setSearchType(ex.type) }}
-              className="text-xs px-3 py-1.5 rounded-full transition-colors"
+              className="text-xs px-3 py-1.5 transition-opacity hover:opacity-80"
               style={{
-                background: '#FFFFFF',
-                border: '1px solid #1B5E20',
-                color: '#1B5E20',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: '#FFFFFF',
                 fontWeight: 500,
+                borderRadius: '999px',
               }}
             >
               {ex.label}
@@ -105,6 +103,6 @@ export default function SearchHero() {
           ))}
         </div>
       </div>
-    </div>
+    </section>
   )
 }

@@ -1,7 +1,7 @@
 export default function Footer() {
   return (
     <footer
-      style={{ background: '#1B5E20', borderTop: '3px solid #4CAF50' }}
+      style={{ background: '#1B5E20' }}
       className="w-full py-8 px-6 mt-auto"
     >
       <div className="max-w-4xl mx-auto flex flex-col gap-4 text-center">

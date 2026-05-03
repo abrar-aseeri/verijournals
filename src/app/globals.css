@@ -106,9 +106,18 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--vj-secondary);
 }
 
-.card {
-  background: #ffffff;
-  border-radius: 0.75rem;
-  border-top: 3px solid var(--vj-primary);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+.vj-card {
+  background: #FFFFFF;
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: box-shadow 200ms ease;
+}
+.vj-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.vj-arrow {
+  color: #43A047;
+  font-weight: 700;
 }

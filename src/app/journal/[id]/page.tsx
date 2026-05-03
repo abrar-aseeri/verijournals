@@ -55,7 +55,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           </div>
         )}
         
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: '3px solid #1B5E20' }}>
+        <div className="vj-card p-6 mb-4">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1 pr-4">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{journal.title}</h1>
@@ -141,7 +141,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-4" style={{ borderTop: '3px solid #1B5E20' }}>
+        <div className="vj-card p-6 mb-4">
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Journal Details</h2>
           <div className="grid grid-cols-2 gap-3">
             {journal.open_access && (
@@ -163,7 +163,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           <span className="text-sm text-amber-800">Data shown is for reference only. Not an official certified source.</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="vj-card p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-2">Found an error?</h2>
           <p className="text-sm text-gray-500 mb-4">Help us improve data accuracy by reporting incorrect information.</p>
           <ErrorReportButton journalId={journal.id} journalTitle={journal.title} />

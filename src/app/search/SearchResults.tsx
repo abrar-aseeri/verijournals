@@ -48,8 +48,7 @@ export default function SearchResults() {
               <Link
                 key={journal.id}
                 href={`/journal/${journal.id}`}
-                className="block bg-white border border-gray-200 rounded-xl p-5 transition-colors hover:border-[#1B5E20]"
-                style={{ borderTop: '3px solid #1B5E20' }}
+                className="vj-card block p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
@@ -68,6 +67,9 @@ export default function SearchResults() {
                   <div className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${getTrustColor(journal.trust_status)}`}>
                     {getTrustLabel(journal.trust_status)}
                   </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <span className="vj-arrow text-lg" aria-hidden>→</span>
                 </div>
               </Link>
             ))}
