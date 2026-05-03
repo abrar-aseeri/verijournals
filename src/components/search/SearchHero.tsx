@@ -32,7 +32,7 @@ export default function SearchHero() {
   }
 
   return (
-    <section style={{ background: '#2E7D32' }} className="w-full pt-14 pb-16 px-6">
+    <section style={{ background: '#2E7D32' }} className="w-full pt-14 pb-12 px-6">
       <div className="max-w-3xl mx-auto text-center">
         <h1
           dir="rtl"
@@ -56,8 +56,9 @@ export default function SearchHero() {
           <select
             value={searchType}
             onChange={(e) => setSearchType(e.target.value)}
-            className="px-3 text-sm outline-none cursor-pointer"
+            className="px-3 text-sm outline-none cursor-pointer appearance-none"
             style={{
+              border: 0,
               borderRight: '1px solid #E5E5E5',
               color: '#1B5E20',
               fontWeight: 600,
@@ -77,12 +78,12 @@ export default function SearchHero() {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="e.g. 1234-5678 or journal name…"
             className="flex-1 px-4 text-sm outline-none text-left"
-            style={{ color: '#1A1A1A', height: '100%' }}
+            style={{ color: '#1A1A1A', height: '100%', border: 0, background: '#FFFFFF' }}
           />
           <button
             onClick={handleSearch}
             className="px-8 text-base flex items-center gap-2"
-            style={{ background: '#1B5E20', color: '#FFFFFF', fontWeight: 700, height: '100%' }}
+            style={{ background: '#1B5E20', color: '#FFFFFF', fontWeight: 700, height: '100%', border: 0 }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5.5" stroke="#fff" strokeWidth="1.5"/>

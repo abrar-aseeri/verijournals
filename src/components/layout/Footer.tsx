@@ -15,7 +15,7 @@ export default function Footer() {
         <p
           dir="rtl"
           className="text-sm leading-relaxed"
-          style={{ color: '#FFFFFF', fontWeight: 400 }}
+          style={{ color: '#FFFFFF', fontWeight: 400, textAlign: 'center' }}
         >
           هذا الموقع في مرحلة تجريبية. البيانات للاستئناس فقط. للتواصل:{' '}
           <a
