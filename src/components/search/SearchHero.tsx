@@ -32,7 +32,7 @@ export default function SearchHero() {
   }
 
   return (
-    <section style={{ background: '#2E7D32' }} className="w-full py-16 px-6">
+    <section style={{ background: '#2E7D32' }} className="w-full pt-14 pb-16 px-6">
       <div className="max-w-3xl mx-auto text-center">
         <h1
           dir="rtl"
@@ -41,21 +41,29 @@ export default function SearchHero() {
         >
           بوابة التحقق من المجلات العلمية
         </h1>
+        <p
+          dir="rtl"
+          className="mt-3"
+          style={{ color: 'rgba(255,255,255,0.85)', fontSize: '16px', fontWeight: 400 }}
+        >
+          ابحث عن أي مجلة علمية للتحقق من موثوقيتها
+        </p>
 
         <div
-          className="mt-8 bg-white overflow-hidden flex"
-          style={{ borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+          className="mt-7 bg-white overflow-hidden flex"
+          style={{ borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', height: '56px' }}
         >
           <select
             value={searchType}
             onChange={(e) => setSearchType(e.target.value)}
-            className="h-12 px-3 text-sm outline-none cursor-pointer"
+            className="px-3 text-sm outline-none cursor-pointer"
             style={{
               borderRight: '1px solid #E5E5E5',
               color: '#1B5E20',
               fontWeight: 600,
-              minWidth: '140px',
+              minWidth: '160px',
               background: '#FFFFFF',
+              height: '100%',
             }}
           >
             {searchTypes.map((t) => (
@@ -68,19 +76,19 @@ export default function SearchHero() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="e.g. 1234-5678 or journal name…"
-            className="flex-1 h-12 px-4 text-sm outline-none text-left"
-            style={{ color: '#1A1A1A' }}
+            className="flex-1 px-4 text-sm outline-none text-left"
+            style={{ color: '#1A1A1A', height: '100%' }}
           />
           <button
             onClick={handleSearch}
-            className="h-12 px-6 text-sm flex items-center gap-2"
-            style={{ background: '#1B5E20', color: '#FFFFFF', fontWeight: 600 }}
+            className="px-8 text-base flex items-center gap-2"
+            style={{ background: '#1B5E20', color: '#FFFFFF', fontWeight: 700, height: '100%' }}
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5.5" stroke="#fff" strokeWidth="1.5"/>
               <path d="M11 11l3 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-            Search
+            <span dir="rtl">بحث</span>
           </button>
         </div>
 
