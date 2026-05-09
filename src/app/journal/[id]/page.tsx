@@ -4,6 +4,8 @@ import Footer from '@/components/layout/Footer'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ErrorReportButton from './ErrorReportButton'
+import DownloadPdfButton from './DownloadPdfButton'
+import { estimatedImpactSignals } from '@/lib/scoring'
 
 export default async function JournalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -41,9 +43,18 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
     <>
       <Navbar />
       <main className="max-w-4xl mx-auto w-full px-4 py-8">
-        <Link href="/search" className="text-sm text-gray-500 hover:text-gray-700 mb-6 inline-flex items-center gap-1">
-          ← Back to Search
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/search" className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1">
+            ← Back to Search
+          </Link>
+          <DownloadPdfButton
+            title={journal.title}
+            issn={journal.issn}
+            quartile={journal.quartile}
+            trustScore={journal.trust_score}
+            lastVerifiedAt={journal.last_verified_at}
+          />
+        </div>
 
         {isPredatory && (
           <div className="mb-4 p-4 rounded-xl border-2 flex items-start gap-3" style={{ background: '#FFF1F2', borderColor: '#FF3D5A' }}>
@@ -115,6 +126,40 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           )}
+
+          {(() => {
+            const impact = estimatedImpactSignals(journal)
+            const sjrLabel = impact.sjr != null ? impact.sjr.toFixed(3) : '—'
+            const cited2yLabel = impact.citedness_2y != null ? impact.citedness_2y.toFixed(2) : '—'
+            return (
+              <div className="rounded-xl border border-gray-100 overflow-hidden mb-4">
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Estimated Impact (open sources)
+                  </span>
+                  <span className="text-xs" style={{ color: '#92400E' }} dir="rtl">
+                    {impact.disclaimer}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-gray-100">
+                  <div className="p-4 text-center">
+                    <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">SJR</div>
+                    <div className="text-lg font-bold text-gray-700">{sjrLabel}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Scimago{impact.sjr_year ? ` ${impact.sjr_year}` : ''}
+                    </div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">2-yr Citedness</div>
+                    <div className="text-lg font-bold text-gray-700">{cited2yLabel}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      OpenAlex{impact.citedness_2y_year ? ` ${impact.citedness_2y_year}` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
 
           <div className="rounded-xl border border-gray-100 overflow-hidden">
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">

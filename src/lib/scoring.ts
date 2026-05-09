@@ -1,4 +1,30 @@
-import { Journal, JournalIndexing } from '@/types'
+import { JournalIndexing } from '@/types'
+
+export const IMPACT_SCORE_DISCLAIMER_AR =
+  'مؤشر تقديري - بانتظار بيانات Clarivate الرسمية'
+
+export type ImpactSignals = {
+  sjr: number | null
+  sjr_year: number | null
+  citedness_2y: number | null
+  citedness_2y_year: number | null
+  disclaimer: string
+}
+
+export function estimatedImpactSignals(journal: {
+  sjr_score?: number | null
+  sjr_year?: number | null
+  citedness_2y?: number | null
+  citedness_2y_year?: number | null
+}): ImpactSignals {
+  return {
+    sjr: journal.sjr_score ?? null,
+    sjr_year: journal.sjr_year ?? null,
+    citedness_2y: journal.citedness_2y ?? null,
+    citedness_2y_year: journal.citedness_2y_year ?? null,
+    disclaimer: IMPACT_SCORE_DISCLAIMER_AR,
+  }
+}
 
 export function calculateScores(indexing: JournalIndexing[]): {
   trust_score: number
