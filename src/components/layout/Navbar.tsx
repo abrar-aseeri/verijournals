@@ -2,31 +2,54 @@ import Link from 'next/link'
 
 export default function Navbar() {
   return (
-    <>
-      <header
-        dir="rtl"
-        style={{ background: '#FFFFFF', borderBottom: '3px solid #2E7D32', height: '100px' }}
-        className="w-full px-6 flex items-center"
-      >
-        <Link
-          href="/"
-          style={{ color: '#1B5E20', fontWeight: 700, fontSize: '24px' }}
-        >
-          VeriJournals
+    <header
+      dir="rtl"
+      className="w-full bg-white shadow-sm font-fs"
+      style={{ height: '64px' }}
+    >
+      <div className="max-w-6xl mx-auto h-full px-6 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3">
+          { /* eslint-disable-next-line @next/next/no-img-element */ }
+          <img
+            src="/branding/verijournals_icon_256.png"
+            alt="VeriJournals"
+            style={{ height: 36, width: 'auto' }}
+          />
+          <span style={{ color: '#0B4644', fontWeight: 700, fontSize: '20px' }}>
+            VeriJournals
+          </span>
         </Link>
-      </header>
 
-      <nav
-        dir="rtl"
-        style={{ background: '#2E7D32', height: '44px', borderBottom: '2px solid #1B5E20' }}
-        className="w-full px-6 flex items-center"
-      >
-        <ul className="flex items-center text-white" style={{ fontWeight: 500, fontSize: '15px', gap: '40px' }}>
-          <li><Link href="/" className="hover:opacity-80 transition-opacity">الرئيسية</Link></li>
-          <li><Link href="/about" className="hover:opacity-80 transition-opacity">من نحن</Link></li>
-          <li><a href="mailto:abrar.aseeri@hotmail.com" className="hover:opacity-80 transition-opacity">تواصل معنا</a></li>
+        <ul className="flex items-center" style={{ fontWeight: 500, fontSize: '14px', gap: '32px' }}>
+          <li>
+            <Link
+              href="/"
+              className="transition-colors"
+              style={{ color: '#6B7280' }}
+            >
+              <span className="hover:text-[#0B4644]">الرئيسية</span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/about"
+              className="transition-colors"
+              style={{ color: '#6B7280' }}
+            >
+              <span className="hover:text-[#0B4644]">من نحن</span>
+            </Link>
+          </li>
+          <li>
+            <a
+              href="mailto:abrar.aseeri@hotmail.com"
+              className="transition-colors"
+              style={{ color: '#6B7280' }}
+            >
+              <span className="hover:text-[#0B4644]">تواصل معنا</span>
+            </a>
+          </li>
         </ul>
-      </nav>
-    </>
+      </div>
+    </header>
   )
 }

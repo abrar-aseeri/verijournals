@@ -1,6 +1,6 @@
 import { getAdmin } from '@/lib/supabase'
 import { createSupabaseServer } from '@/lib/supabase-server'
-import { BookOpen, Users, Search, AlertTriangle } from 'lucide-react'
+import { BookOpen, Users, Search, AlertTriangle, LogIn } from 'lucide-react'
 import SignOutButton from './SignOutButton'
 
 export const dynamic = 'force-dynamic'
@@ -15,6 +15,7 @@ export default async function AdminPage() {
     { count: usersCount },
     { count: searchesCount },
     { count: reportsCount },
+    { data: authList },
     { data: recentSearches },
     { data: recentReports },
   ] = await Promise.all([
@@ -22,6 +23,7 @@ export default async function AdminPage() {
     supabase.from('users').select('*', { count: 'exact', head: true }),
     supabase.from('search_logs').select('*', { count: 'exact', head: true }),
     supabase.from('error_reports').select('*', { count: 'exact', head: true }),
+    supabase.auth.admin.listUsers({ perPage: 1000 }),
     supabase.from('search_logs')
       .select('id, raw_query, search_type, result_status, created_at')
       .order('created_at', { ascending: false }).limit(10),
@@ -30,11 +32,14 @@ export default async function AdminPage() {
       .order('created_at', { ascending: false }).limit(10),
   ])
 
+  const loginsCount = (authList?.users ?? []).filter((u) => u.last_sign_in_at != null).length
+
   const stats = [
     { label: 'Journals', value: journalsCount || 0, Icon: BookOpen },
     { label: 'Users', value: usersCount || 0, Icon: Users },
     { label: 'Searches', value: searchesCount || 0, Icon: Search },
     { label: 'Reports', value: reportsCount || 0, Icon: AlertTriangle },
+    { label: 'Logins', value: loginsCount, Icon: LogIn },
   ]
 
   return (
@@ -67,7 +72,7 @@ export default async function AdminPage() {
           مرحباً، {user?.email ?? '—'}
         </p>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {stats.map(({ label, value, Icon }) => (
             <div
               key={label}

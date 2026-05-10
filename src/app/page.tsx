@@ -1,11 +1,14 @@
 import SearchHero from '@/components/search/SearchHero'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import { getAdmin } from '@/lib/supabase'
+
+export const dynamic = 'force-dynamic'
 
 function CheckCircle() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
-      <circle cx="11" cy="11" r="10" fill="#43A047" />
+      <circle cx="11" cy="11" r="10" fill="#05A854" />
       <path
         d="M6.5 11.5l3 3 6-6"
         stroke="#FFFFFF"
@@ -18,7 +21,11 @@ function CheckCircle() {
   )
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { count: journalsCount } = await getAdmin()
+    .from('journals')
+    .select('*', { count: 'exact', head: true })
+
   return (
     <>
       <Navbar />
@@ -41,9 +48,9 @@ export default function HomePage() {
               <CheckCircle />
             </div>
             <p
-              style={{ color: '#1B5E20', fontWeight: 700, fontSize: '20px', margin: 0 }}
+              style={{ color: '#0B4644', fontWeight: 700, fontSize: '20px', margin: 0 }}
             >
-              +30,743 مجلة علمية في قاعدة البيانات
+              +{(journalsCount ?? 0).toLocaleString()} مجلة علمية في قاعدة البيانات
             </p>
           </div>
         </section>

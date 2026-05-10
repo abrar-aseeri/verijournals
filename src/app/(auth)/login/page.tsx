@@ -83,22 +83,22 @@ export default function LoginPage() {
     : 'Already have an account? Sign in'
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#1B5E20' }}>
+    <div className="min-h-screen flex items-center justify-center px-4 font-fs" style={{ background: '#F8FAFC' }}>
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-3 mb-8 justify-center">
-          <div style={{ background: '#1B5E20' }} className="w-9 h-9 rounded-xl flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2L3 6v8l7 4 7-4V6L10 2z" stroke="#fff" strokeWidth="1.5" fill="none"/>
-              <path d="M10 2v18M3 6l7 4 7-4" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round"/>
-            </svg>
-          </div>
+          { /* eslint-disable-next-line @next/next/no-img-element */ }
+          <img
+            src="/branding/verijournals_icon_256.png"
+            alt="VeriJournals"
+            style={{ height: 50, width: 'auto' }}
+          />
           <div>
-            <div className="text-white font-bold text-lg">Veri<span style={{ color: '#4CAF50' }}>Journals</span></div>
-            <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Research & Innovation Institute — MOD</div>
+            <div className="font-bold text-lg" style={{ color: '#0B4644' }}>Veri<span style={{ color: '#05A854' }}>Journals</span></div>
+            <div className="text-xs" style={{ color: '#6B7280' }}>Research & Innovation Institute</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h1 className="text-lg font-bold text-gray-900 mb-1">{heading}</h1>
           <p className="text-sm text-gray-500 mb-6">{subhead}</p>
 
@@ -148,7 +148,7 @@ export default function LoginPage() {
               onClick={submit}
               disabled={loading}
               className="w-full py-2.5 rounded-lg text-sm font-semibold text-white mt-1"
-              style={{ background: loading ? '#9CA3AF' : '#1B5E20' }}
+              style={{ background: loading ? '#9CA3AF' : '#05A854' }}
             >
               {btnLabel}
             </button>

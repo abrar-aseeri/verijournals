@@ -44,12 +44,12 @@
 }
 
 :root {
-  --background: #F5F5F5;
+  --background: #F8FAFC;
   --foreground: #1A1A1A;
-  --vj-primary: #1B5E20;
-  --vj-secondary: #2E7D32;
-  --vj-light: #4CAF50;
-  --vj-bg: #F5F5F5;
+  --vj-primary: #05A854;
+  --vj-secondary: #0B4644;
+  --vj-light: #05A854;
+  --vj-bg: #F8FAFC;
   --vj-text: #1A1A1A;
   --vj-banner: #FFF9C4;
 }
@@ -122,14 +122,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .vj-arrow {
-  color: #43A047;
+  color: #05A854;
   font-weight: 700;
 }
 
 .vj-search-btn {
-  background: #1B5E20;
+  background: #05A854;
   transition: background-color 150ms ease;
 }
 .vj-search-btn:hover {
-  background: #14491A;
+  background: #048048;
 }

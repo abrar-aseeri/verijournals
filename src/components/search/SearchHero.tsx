@@ -32,12 +32,19 @@ export default function SearchHero() {
   }
 
   return (
-    <section style={{ background: '#F8F8F8' }} className="w-full pt-14 pb-12 px-6">
+    <section style={{ background: '#F8FAFC' }} className="w-full pt-12 pb-12 px-6">
       <div className="max-w-3xl mx-auto text-center">
+        { /* eslint-disable-next-line @next/next/no-img-element */ }
+        <img
+          src="/branding/verijournals_logo_transparent.png"
+          alt="VeriJournals"
+          className="mx-auto mb-6"
+          style={{ height: 96, width: 'auto' }}
+        />
         <h1
           dir="rtl"
-          className="leading-tight"
-          style={{ color: '#1B5E20', fontSize: '32px', fontWeight: 700 }}
+          className="leading-tight font-fs"
+          style={{ color: '#0B4644', fontSize: '32px', fontWeight: 700 }}
         >
           بوابة التحقق من المجلات العلمية
         </h1>
@@ -65,7 +72,7 @@ export default function SearchHero() {
             style={{
               border: 0,
               borderRight: '1px solid #E5E5E5',
-              color: '#1B5E20',
+              color: '#0B4644',
               fontWeight: 600,
               minWidth: '160px',
               background: '#FFFFFF',
@@ -107,7 +114,7 @@ export default function SearchHero() {
               style={{
                 background: '#F5F5F5',
                 border: '1px solid #E5E5E5',
-                color: '#1B5E20',
+                color: '#0B4644',
                 fontWeight: 500,
                 borderRadius: '999px',
               }}

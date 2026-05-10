@@ -181,7 +181,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-8">
         <div className="mb-4">
-          <span className="inline-block px-3 py-1 rounded-full text-xs font-mono font-semibold" style={{ background: "#E8F5E9", color: "#1B5E20" }}>
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-mono font-semibold" style={{ background: "#DCFCE7", color: "#05A854" }}>
             DOI: {doi}
           </span>
         </div>
@@ -225,7 +225,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                 {retracted ? (
                   <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#FFE8EC", color: "#FF3D5A" }}>Retracted</span>
                 ) : (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#E8F5E9", color: "#1B5E20" }}>Active — No retractions or corrections</span>
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#DCFCE7", color: "#05A854" }}>Active — No retractions or corrections</span>
                 )}
                 {article.cited_by_count > 0 && (
                   <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600">
@@ -247,14 +247,14 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                       href={`https://doaj.org/toc/${encodeURIComponent(issn || '')}`}
                       target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                      style={{ background: "#E8F5E9", color: "#1B5E20", border: "1px solid #2E7D32" }}
+                      style={{ background: "#DCFCE7", color: "#05A854", border: "1px solid #05A854" }}
                       title="Verified open access by DOAJ"
                     >
                       <span aria-hidden>✓</span> DOAJ Open Access
                     </a>
                   )}
                 </div>
-                {issn && <div className="text-sm font-mono mb-4" style={{ color: "#1B5E20" }}>{issn}</div>}
+                {issn && <div className="text-sm font-mono mb-4" style={{ color: "#05A854" }}>{issn}</div>}
 
                 {(hIndex || citations) && (
                   <div className="grid grid-cols-2 gap-4 p-4 rounded-xl mb-4" style={{ background: "#F8FAFC" }}>
@@ -284,7 +284,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                       <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">SCImago Quartile</div>
                       {quartile ? (
                         <div className="text-lg font-bold" style={{
-                          color: quartile === "Q1" ? "#1B5E20" : quartile === "Q2" ? "#2563EB" : quartile === "Q3" ? "#D97706" : "#DC2626"
+                          color: quartile === "Q1" ? "#05A854" : quartile === "Q2" ? "#2563EB" : quartile === "Q3" ? "#D97706" : "#DC2626"
                         }}>{quartile}</div>
                       ) : (
                         <div className="text-lg font-bold text-gray-300">—</div>
@@ -309,7 +309,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                         href={`https://www.scopus.com/sources.uri?name=${encodeURIComponent(journalName || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: "#E8F5E9", color: "#1B5E20" }}
+                        style={{ background: "#DCFCE7", color: "#05A854" }}
                       >
                         Search →
                       </a>
@@ -332,7 +332,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                         href={journal?.id || `https://openalex.org/sources?search=${encodeURIComponent(journalName || issn || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: "#E8F5E9", color: "#1B5E20" }}
+                        style={{ background: "#DCFCE7", color: "#05A854" }}
                       >
                         Source →
                       </a>
@@ -355,7 +355,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                         href={`https://www.scimagojr.com/journalsearch.php?q=${encodeURIComponent(issn || journalName || '')}`}
                         target="_blank" rel="noopener noreferrer"
                         className="inline-block px-2 py-1 rounded text-xs font-medium"
-                        style={{ background: "#E8F5E9", color: "#1B5E20" }}
+                        style={{ background: "#DCFCE7", color: "#05A854" }}
                       >
                         SCImago →
                       </a>

@@ -20,19 +20,19 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
   if (!journal) notFound()
 
   const isPredatory = journal.is_predatory === true
-  const trustColor = isPredatory ? '#FF3D5A' :
-                     journal.trust_status === 'trusted' ? '#1B5E20' : 
-                     journal.trust_status === 'high_risk' ? '#FF3D5A' : '#FFB020'
-  const trustBg = isPredatory ? '#FFE8EC' :
-                  journal.trust_status === 'trusted' ? '#E6F5EE' : 
-                  journal.trust_status === 'high_risk' ? '#FFE8EC' : '#FEF3C7'
+  const trustColor = isPredatory ? '#DC2626' :
+                     journal.trust_status === 'trusted' ? '#05A854' :
+                     journal.trust_status === 'high_risk' ? '#DC2626' : '#FFB020'
+  const trustBg = isPredatory ? '#FEE2E2' :
+                  journal.trust_status === 'trusted' ? '#DCFCE7' :
+                  journal.trust_status === 'high_risk' ? '#FEE2E2' : '#FEF3C7'
   const trustLabel = isPredatory ? '⚠️ Predatory Journal' :
                      journal.trust_status === 'trusted' ? 'Trusted' : 
                      journal.trust_status === 'high_risk' ? 'High Risk' : 'Under Evaluation'
 
   const quartileColor = (q: string | null) => {
     if (!q) return { bg: '#F3F4F6', text: '#6B7280' }
-    if (q === 'Q1') return { bg: '#DCFCE7', text: '#15803D' }
+    if (q === 'Q1') return { bg: '#DCFCE7', text: '#05A854' }
     if (q === 'Q2') return { bg: '#DBEAFE', text: '#1D4ED8' }
     if (q === 'Q3') return { bg: '#FEF3C7', text: '#92400E' }
     return { bg: '#FFE8EC', text: '#BE123C' }
@@ -71,7 +71,7 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
             <div className="flex-1 pr-4">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{journal.title}</h1>
               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                {journal.issn && <span className="font-mono font-semibold" style={{ color: '#1B5E20' }}>{journal.issn}</span>}
+                {journal.issn && <span className="font-mono font-semibold" style={{ color: '#05A854' }}>{journal.issn}</span>}
                 {journal.publisher && <span>{journal.publisher}</span>}
                 {journal.country && <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">{journal.country}</span>}
               </div>

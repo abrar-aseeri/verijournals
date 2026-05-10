@@ -22,14 +22,14 @@ export default function DownloadPdfButton({ title, issn, quartile, trustScore, l
       const pageHeight = doc.internal.pageSize.getHeight()
       const marginX = 48
 
-      doc.setFillColor(27, 94, 32)
+      doc.setFillColor(11, 70, 68)
       doc.rect(0, 0, pageWidth, 96, 'F')
       doc.setTextColor(255, 255, 255)
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(22)
       doc.text('Veri', marginX, 56)
       const veriWidth = doc.getTextWidth('Veri')
-      doc.setTextColor(76, 175, 80)
+      doc.setTextColor(5, 168, 84)
       doc.text('Journals', marginX + veriWidth, 56)
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(10)
@@ -72,7 +72,7 @@ export default function DownloadPdfButton({ title, issn, quartile, trustScore, l
       const watermark = 'Auto-generated report - for reference only'
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(46)
-      doc.setTextColor(27, 94, 32)
+      doc.setTextColor(11, 70, 68)
       const gState = (doc as unknown as { GState: new (opts: { opacity: number }) => unknown }).GState
       const setGState = (doc as unknown as { setGState: (s: unknown) => void }).setGState
       if (gState && setGState) {
@@ -103,7 +103,7 @@ export default function DownloadPdfButton({ title, issn, quartile, trustScore, l
       onClick={handleDownload}
       disabled={busy}
       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-60"
-      style={{ background: '#1B5E20' }}
+      style={{ background: '#05A854' }}
     >
       <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
