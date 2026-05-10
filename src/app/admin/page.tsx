@@ -1,85 +1,159 @@
 import { getAdmin } from '@/lib/supabase'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import { createSupabaseServer } from '@/lib/supabase-server'
+import { BookOpen, Users, Search, AlertTriangle } from 'lucide-react'
+import SignOutButton from './SignOutButton'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminPage() {
   const supabase = getAdmin()
+  const session = await createSupabaseServer()
+  const { data: { user } } = await session.auth.getUser()
 
-  const [{ count: journalsCount }, { count: usersCount }, { count: reportsCount }, { data: recentReports }] = await Promise.all([
+  const [
+    { count: journalsCount },
+    { count: usersCount },
+    { count: searchesCount },
+    { count: reportsCount },
+    { data: recentSearches },
+    { data: recentReports },
+  ] = await Promise.all([
     supabase.from('journals').select('*', { count: 'exact', head: true }),
     supabase.from('users').select('*', { count: 'exact', head: true }),
+    supabase.from('search_logs').select('*', { count: 'exact', head: true }),
     supabase.from('error_reports').select('*', { count: 'exact', head: true }),
-    supabase.from('error_reports').select('*, journals(title)').order('created_at', { ascending: false }).limit(10),
+    supabase.from('search_logs')
+      .select('id, raw_query, search_type, result_status, created_at')
+      .order('created_at', { ascending: false }).limit(10),
+    supabase.from('error_reports')
+      .select('id, description, status, created_at, journals(title)')
+      .order('created_at', { ascending: false }).limit(10),
   ])
 
-  return (
-    <div className="min-h-screen" style={{ background: '#1B5E20' }}>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>VeriJournals — MOD Research Platform</p>
-          </div>
-          <Link href="/" className="text-sm px-4 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
-            Back to Site
-          </Link>
-        </div>
+  const stats = [
+    { label: 'Journals', value: journalsCount || 0, Icon: BookOpen },
+    { label: 'Users', value: usersCount || 0, Icon: Users },
+    { label: 'Searches', value: searchesCount || 0, Icon: Search },
+    { label: 'Reports', value: reportsCount || 0, Icon: AlertTriangle },
+  ]
 
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {[
-            { label: 'Total Journals', value: journalsCount || 0, color: '#1B5E20' },
-            { label: 'Registered Users', value: usersCount || 0, color: '#4CAF50' },
-            { label: 'Error Reports', value: reportsCount || 0, color: '#FFB020' },
-          ].map(stat => (
-            <div key={stat.label} className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div className="text-3xl font-bold mb-1" style={{ color: stat.color }}>{stat.value.toLocaleString()}</div>
-              <div className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{stat.label}</div>
+  return (
+    <div className="min-h-screen font-fs" style={{ background: '#F8FAFC' }}>
+      <header className="bg-white shadow-sm h-16 flex items-center px-6">
+        <div className="max-w-6xl w-full mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            { /* eslint-disable-next-line @next/next/no-img-element */ }
+            <img
+              src="/branding/verijournals_icon_256.png"
+              alt="VeriJournals"
+              style={{ height: 40, width: 'auto' }}
+            />
+            <span className="text-lg font-bold" style={{ color: '#0B4644' }}>VeriJournals</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span
+              className="px-3 py-1 rounded-full text-xs font-medium"
+              style={{ background: 'rgba(11,70,68,0.08)', color: '#0B4644' }}
+            >
+              Admin Dashboard
+            </span>
+            <SignOutButton />
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <p className="text-sm font-light mb-6" style={{ color: '#B2BEC4' }} dir="rtl">
+          مرحباً، {user?.email ?? '—'}
+        </p>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {stats.map(({ label, value, Icon }) => (
+            <div
+              key={label}
+              className="bg-white rounded-2xl border border-gray-100 p-6 relative"
+            >
+              <Icon
+                className="absolute top-4 right-4 w-5 h-5"
+                style={{ color: '#B2BEC4' }}
+                aria-hidden
+              />
+              <div
+                className="font-bold mb-1"
+                style={{ fontSize: '36px', color: '#05A854', lineHeight: 1.1 }}
+              >
+                {value.toLocaleString()}
+              </div>
+              <div className="font-light" style={{ fontSize: '14px', color: '#6B7280' }}>
+                {label}
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div className="px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-            <h2 className="text-white font-semibold">Recent Error Reports</h2>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                {['Journal', 'Error Type', 'Description', 'Status', 'Date'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-medium uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(recentReports || []).map((r: any) => (
-                <tr key={r.id} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  <td className="px-4 py-3 text-sm text-white">{(r.journals as any)?.title?.slice(0, 40) || 'Unknown'}...</td>
-                  <td className="px-4 py-3 text-xs" style={{ color: '#FFB020' }}>{r.error_type}</td>
-                  <td className="px-4 py-3 text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{r.description?.slice(0, 50)}...</td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{
-                      background: r.status === 'pending' ? 'rgba(255,176,32,0.15)' : 'rgba(0,160,90,0.15)',
-                      color: r.status === 'pending' ? '#FFB020' : '#1B5E20'
-                    }}>{r.status}</span>
-                  </td>
-                  <td className="px-4 py-3 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="font-bold" style={{ color: '#0B4644' }}>Recent Searches</h2>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {(!recentSearches || recentSearches.length === 0) ? (
+                <div className="px-6 py-8 text-center text-sm font-light" style={{ color: '#B2BEC4' }}>
+                  No searches yet
+                </div>
+              ) : recentSearches.map((s) => (
+                <div key={s.id} className="px-6 py-3 flex items-center justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm truncate" style={{ color: '#0B4644' }}>
+                      {s.raw_query || '—'}
+                    </div>
+                    <div className="text-xs font-light mt-0.5" style={{ color: '#B2BEC4' }}>
+                      {(s.search_type || 'unknown')}
+                      {s.result_status ? ` · ${s.result_status}` : ''}
+                    </div>
+                  </div>
+                  <div className="text-xs font-light flex-shrink-0" style={{ color: '#B2BEC4' }}>
+                    {new Date(s.created_at).toLocaleDateString()}
+                  </div>
+                </div>
               ))}
-              {(!recentReports || recentReports.length === 0) && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    No error reports yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            </div>
+          </section>
+
+          <section className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="font-bold" style={{ color: '#0B4644' }}>Recent Errors</h2>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {(!recentReports || recentReports.length === 0) ? (
+                <div className="px-6 py-8 text-center text-sm font-light" style={{ color: '#B2BEC4' }}>
+                  No error reports yet
+                </div>
+              ) : recentReports.map((r: { id: string; description: string | null; status: string | null; created_at: string; journals: { title: string } | { title: string }[] | null }) => {
+                const journalTitle = Array.isArray(r.journals)
+                  ? r.journals[0]?.title
+                  : r.journals?.title
+                return (
+                  <div key={r.id} className="px-6 py-3 flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm truncate" style={{ color: '#0B4644' }}>
+                        {journalTitle || 'Unknown journal'}
+                      </div>
+                      <div className="text-xs font-light mt-0.5 truncate" style={{ color: '#B2BEC4' }}>
+                        {(r.description || '—').slice(0, 60)}
+                        {r.status ? ` · ${r.status}` : ''}
+                      </div>
+                    </div>
+                    <div className="text-xs font-light flex-shrink-0" style={{ color: '#B2BEC4' }}>
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

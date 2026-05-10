@@ -57,7 +57,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-mod-dark: #0B4644;
+  --color-mod-green: #05A854;
+  --color-mod-grey: #B2BEC4;
   --font-sans: 'Saudi-MoD', system-ui, sans-serif;
+  --font-fs: 'Saudi-MoD', system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
 }
 
