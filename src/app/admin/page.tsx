@@ -2,6 +2,8 @@ import { getAdmin } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminPage() {
   const supabase = getAdmin()
 
