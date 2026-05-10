@@ -92,10 +92,7 @@ export default function LoginPage() {
             alt="VeriJournals"
             style={{ height: 50, width: 'auto' }}
           />
-          <div>
-            <div className="font-bold text-lg" style={{ color: '#0B4644' }}>Veri<span style={{ color: '#05A854' }}>Journals</span></div>
-            <div className="text-xs" style={{ color: '#6B7280' }}>Research & Innovation Institute</div>
-          </div>
+          <div className="font-bold text-lg" style={{ color: '#0B4644' }}>Veri<span style={{ color: '#05A854' }}>Journals</span></div>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">

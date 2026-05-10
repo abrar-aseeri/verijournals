@@ -67,14 +67,11 @@ export default function RegisterPage() {
             alt="VeriJournals"
             style={{ height: 50, width: 'auto' }}
           />
-          <div>
-            <div className="font-bold text-lg" style={{ color: '#0B4644' }}>Veri<span style={{ color: '#05A854' }}>Journals</span></div>
-            <div className="text-xs" style={{ color: '#6B7280' }}>Research and Innovation Institute</div>
-          </div>
+          <div className="font-bold text-lg" style={{ color: '#0B4644' }}>Veri<span style={{ color: '#05A854' }}>Journals</span></div>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h1 className="text-lg font-bold text-gray-900 mb-1">Create account</h1>
-          <p className="text-sm text-gray-500 mb-5">Join VeriJournals - MOD Research Platform</p>
+          <p className="text-sm text-gray-500 mb-5">Join VeriJournals</p>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600 mb-4">{error}</div>}
           <div className="flex flex-col gap-3">
             <div>

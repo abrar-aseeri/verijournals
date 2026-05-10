@@ -23,18 +23,14 @@ export default function DownloadPdfButton({ title, issn, quartile, trustScore, l
       const marginX = 48
 
       doc.setFillColor(11, 70, 68)
-      doc.rect(0, 0, pageWidth, 96, 'F')
+      doc.rect(0, 0, pageWidth, 76, 'F')
       doc.setTextColor(255, 255, 255)
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(22)
-      doc.text('Veri', marginX, 56)
+      doc.text('Veri', marginX, 48)
       const veriWidth = doc.getTextWidth('Veri')
       doc.setTextColor(5, 168, 84)
-      doc.text('Journals', marginX + veriWidth, 56)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      doc.setTextColor(255, 255, 255)
-      doc.text('Research & Innovation Institute — MOD', marginX, 76)
+      doc.text('Journals', marginX + veriWidth, 48)
 
       let y = 140
       doc.setTextColor(20, 20, 20)
