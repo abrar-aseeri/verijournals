@@ -1,3 +1,7 @@
+// Imports DOAJ open-access verification rows into journal_indexing.
+// Prerequisite: bash scripts/fetch-source-data.sh   (downloads doaj.csv)
+// Run:         node --env-file=.env.local scripts/import-doaj.mjs
+
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
