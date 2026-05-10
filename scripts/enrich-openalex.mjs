@@ -40,20 +40,26 @@ async function enrichFromOpenAlex() {
         const res = await fetch(url, { headers: { 'User-Agent': 'VeriJournals/1.0' } })
         const data = await res.json()
 
+        const writes = []
         for (const source of (data.results || [])) {
           if (!source.issn) continue
           const journal = chunk.find(j => source.issn.includes(j.issn))
           if (!journal) continue
 
           const citedness2y = source.summary_stats?.['2yr_mean_citedness']
-          await supabase.from('journals').update({
-            h_index: source.summary_stats?.h_index || null,
-            total_cites: source.cited_by_count || null,
-            citedness_2y: typeof citedness2y === 'number' ? citedness2y : null,
-            citedness_2y_year: typeof citedness2y === 'number' ? snapshotYear : null,
-          }).eq('id', journal.id)
-          updated++
+          writes.push(
+            supabase.from('journals').update({
+              h_index: source.summary_stats?.h_index || null,
+              total_cites: source.cited_by_count || null,
+              citedness_2y: typeof citedness2y === 'number' ? citedness2y : null,
+              citedness_2y_year: typeof citedness2y === 'number' ? snapshotYear : null,
+            }).eq('id', journal.id)
+          )
         }
+        const results = await Promise.all(writes)
+        updated += results.filter(r => !r.error).length
+        const failed = results.filter(r => r.error)
+        if (failed.length) console.error(`Chunk: ${failed.length} write errors, first: ${failed[0].error.message}`)
       } catch (e) {
         console.error('Chunk error:', e.message)
       }
