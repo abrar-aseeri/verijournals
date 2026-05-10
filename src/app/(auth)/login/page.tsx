@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
@@ -47,6 +48,7 @@ export default function LoginPage() {
   }
 
   async function handleSignUp() {
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return }
     setLoading(true); setError(''); setInfo('')
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -66,7 +68,7 @@ export default function LoginPage() {
 
   function toggleMode() {
     setMode(mode === 'signin' ? 'signup' : 'signin')
-    setError(''); setInfo('')
+    setError(''); setInfo(''); setConfirmPassword('')
   }
 
   const heading = mode === 'signin' ? 'Welcome back' : 'Create account'
@@ -124,11 +126,24 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && submit()}
+                onKeyDown={(e) => mode === 'signin' && e.key === 'Enter' && submit()}
                 placeholder="••••••••"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-green-400"
               />
             </div>
+            {mode === 'signup' && (
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submit()}
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-green-400"
+                />
+              </div>
+            )}
             <button
               onClick={submit}
               disabled={loading}
