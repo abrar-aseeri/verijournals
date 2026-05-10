@@ -17,17 +17,50 @@ const examples = [
   { label: '10.1056/NEJMoa2001316', type: 'doi' },
 ]
 
+const DOI_RE = /^10\.\d{4,9}\/.+/
+
+type DoiError = { msg: string; doi: string; showArticleLink: boolean }
+
 export default function SearchHero() {
   const [query, setQuery] = useState('')
   const [searchType, setSearchType] = useState('issn')
+  const [loading, setLoading] = useState(false)
+  const [doiError, setDoiError] = useState<DoiError | null>(null)
   const router = useRouter()
 
-  function handleSearch() {
-    if (!query.trim()) return
-    if (searchType === 'doi') {
-      router.push(`/article?doi=${encodeURIComponent(query.trim())}`)
-    } else {
-      router.push(`/search?q=${encodeURIComponent(query.trim())}&type=${searchType}`)
+  async function handleSearch() {
+    const q = query.trim()
+    if (!q) return
+    setDoiError(null)
+
+    const isDoi = searchType === 'doi' || DOI_RE.test(q)
+    if (!isDoi) {
+      router.push(`/search?q=${encodeURIComponent(q)}&type=${searchType}`)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/doi?doi=${encodeURIComponent(q)}`)
+      const json = await res.json()
+
+      if (!res.ok || json.error) {
+        setDoiError({ msg: 'لم يتم العثور على هذا الـ DOI. تحقق من الصيغة وحاول مرة أخرى.', doi: q, showArticleLink: false })
+        setLoading(false)
+        return
+      }
+
+      const journalId = json.article?.journal_id as string | null | undefined
+      if (journalId) {
+        router.push(`/journal/${journalId}`)
+        return
+      }
+
+      setDoiError({ msg: 'تم العثور على المقالة، لكن المجلة غير مفهرسة في قاعدة بياناتنا.', doi: q, showArticleLink: true })
+      setLoading(false)
+    } catch {
+      setDoiError({ msg: 'تعذّر الاتصال بالخادم. حاول مرة أخرى.', doi: q, showArticleLink: false })
+      setLoading(false)
     }
   }
 
@@ -94,16 +127,36 @@ export default function SearchHero() {
           />
           <button
             onClick={handleSearch}
-            className="vj-search-btn px-8 text-base flex items-center gap-2"
+            disabled={loading}
+            className="vj-search-btn px-8 text-base flex items-center gap-2 disabled:opacity-70"
             style={{ color: '#FFFFFF', fontWeight: 700, height: '100%', border: 0, borderRadius: '6px' }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="7" cy="7" r="5.5" stroke="#fff" strokeWidth="1.5"/>
               <path d="M11 11l3 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-            <span dir="rtl">بحث</span>
+            <span dir="rtl">{loading ? '...' : 'بحث'}</span>
           </button>
         </div>
+
+        {doiError && (
+          <div
+            dir="rtl"
+            className="mt-4 mx-auto max-w-xl rounded-lg px-4 py-3 text-right font-fs"
+            style={{ background: '#FEF3C7', border: '1px solid #FCD34D', color: '#92400E' }}
+          >
+            <div className="text-sm font-medium mb-1">{doiError.msg}</div>
+            {doiError.showArticleLink && (
+              <a
+                href={`/article?doi=${encodeURIComponent(doiError.doi)}`}
+                className="text-xs underline hover:opacity-80"
+                style={{ color: '#0B4644', fontWeight: 600 }}
+              >
+                عرض تفاصيل المقالة من Crossref
+              </a>
+            )}
+          </div>
+        )}
 
         <div className="mt-4 flex gap-2 flex-wrap justify-center">
           {examples.map((ex) => (
