@@ -38,11 +38,11 @@ export default function RegisterPage() {
     })
     if (authError) { setError(authError.message); setLoading(false); return }
     if (data.user) {
-      await supabase.from('users').insert({
+      await supabase.from('users').upsert({
         auth_id: data.user.id, full_name: form.full_name,
         email: form.email, employee_id: form.employee_id || null,
         hospital_name: form.hospital_name || null, specialty: form.specialty || null,
-      })
+      }, { onConflict: 'auth_id' })
     }
     setSuccess(true); setLoading(false)
   }
