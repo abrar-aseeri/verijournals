@@ -5,56 +5,67 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
+const PAGE_SIZE = 1000
+const CHUNK_SIZE = 50
+
 async function enrichFromOpenAlex() {
   console.log('Starting OpenAlex enrichment...')
-  
-  const { data: journals } = await supabase
-    .from('journals')
-    .select('id, issn')
-    .not('issn', 'is', null)
-    .limit(2000)
-
-  if (!journals) { console.log('No journals found'); return }
-  console.log(`Found ${journals.length} journals to enrich`)
-
-  const issnList = journals.map(j => j.issn).join('|')
-  const chunks = []
-  for (let i = 0; i < journals.length; i += 50) {
-    chunks.push(journals.slice(i, i + 50))
-  }
 
   const snapshotYear = new Date().getFullYear()
   let updated = 0
-  for (const chunk of chunks) {
-    const filter = chunk.map(j => `issn:${j.issn}`).join('|')
-    const url = `https://api.openalex.org/sources?filter=issn:${chunk.map(j=>j.issn).join('|')}&per-page=50&select=issn,summary_stats,cited_by_count`
+  let fetched = 0
+  let lastId = null
 
-    try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'VeriJournals/1.0' } })
-      const data = await res.json()
+  while (true) {
+    let q = supabase
+      .from('journals')
+      .select('id, issn')
+      .not('issn', 'is', null)
+      .order('id', { ascending: true })
+      .limit(PAGE_SIZE)
+    if (lastId) q = q.gt('id', lastId)
 
-      for (const source of (data.results || [])) {
-        if (!source.issn) continue
-        const journal = chunk.find(j => source.issn.includes(j.issn))
-        if (!journal) continue
+    const { data: journals, error } = await q
+    if (error) { console.error('Page error:', error.message); break }
+    if (!journals || journals.length === 0) break
 
-        const citedness2y = source.summary_stats?.['2yr_mean_citedness']
-        await supabase.from('journals').update({
-          h_index: source.summary_stats?.h_index || null,
-          total_cites: source.cited_by_count || null,
-          citedness_2y: typeof citedness2y === 'number' ? citedness2y : null,
-          citedness_2y_year: typeof citedness2y === 'number' ? snapshotYear : null,
-        }).eq('id', journal.id)
-        updated++
+    fetched += journals.length
+    console.log(`Page: +${journals.length} (fetched ${fetched})`)
+
+    for (let i = 0; i < journals.length; i += CHUNK_SIZE) {
+      const chunk = journals.slice(i, i + CHUNK_SIZE)
+      const url = `https://api.openalex.org/sources?filter=issn:${chunk.map(j => j.issn).join('|')}&per-page=50&select=issn,summary_stats,cited_by_count`
+
+      try {
+        const res = await fetch(url, { headers: { 'User-Agent': 'VeriJournals/1.0' } })
+        const data = await res.json()
+
+        for (const source of (data.results || [])) {
+          if (!source.issn) continue
+          const journal = chunk.find(j => source.issn.includes(j.issn))
+          if (!journal) continue
+
+          const citedness2y = source.summary_stats?.['2yr_mean_citedness']
+          await supabase.from('journals').update({
+            h_index: source.summary_stats?.h_index || null,
+            total_cites: source.cited_by_count || null,
+            citedness_2y: typeof citedness2y === 'number' ? citedness2y : null,
+            citedness_2y_year: typeof citedness2y === 'number' ? snapshotYear : null,
+          }).eq('id', journal.id)
+          updated++
+        }
+      } catch (e) {
+        console.error('Chunk error:', e.message)
       }
-    } catch(e) {
-      console.error('Chunk error:', e.message)
+
+      await new Promise(r => setTimeout(r, 300))
     }
-    
-    console.log(`Updated ${updated} journals...`)
-    await new Promise(r => setTimeout(r, 300))
+
+    console.log(`Progress: updated ${updated} / fetched ${fetched}`)
+    lastId = journals[journals.length - 1].id
   }
-  console.log(`Done! Total updated: ${updated}`)
+
+  console.log(`Done! Total updated: ${updated}, total fetched: ${fetched}`)
 }
 
 enrichFromOpenAlex().catch(console.error)
