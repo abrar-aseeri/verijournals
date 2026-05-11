@@ -1,3 +1,8 @@
+// Enriches journals with OpenAlex metrics (h_index, total_cites,
+// citedness_2y, citedness_2y_year) for every journal with an issn.
+//
+// Run:  node --env-file=.env.local scripts/enrich-openalex.mjs
+
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -9,8 +14,6 @@ const PAGE_SIZE = 1000
 const CHUNK_SIZE = 50
 
 async function enrichFromOpenAlex() {
-  console.log('Starting OpenAlex enrichment...')
-
   const snapshotYear = new Date().getFullYear()
   let updated = 0
   let fetched = 0
@@ -26,7 +29,7 @@ async function enrichFromOpenAlex() {
     if (lastId) q = q.gt('id', lastId)
 
     const { data: journals, error } = await q
-    if (error) { console.error('Page error:', error.message); break }
+    if (error) throw new Error(`Page fetch: ${error.message}`)
     if (!journals || journals.length === 0) break
 
     fetched += journals.length
@@ -71,7 +74,38 @@ async function enrichFromOpenAlex() {
     lastId = journals[journals.length - 1].id
   }
 
-  console.log(`Done! Total updated: ${updated}, total fetched: ${fetched}`)
+  return { fetched, updated }
 }
 
-enrichFromOpenAlex().catch(console.error)
+async function main() {
+  console.log('OpenAlex enrichment starting…')
+
+  const { data: runRow, error: runErr } = await supabase
+    .from('automation_runs')
+    .insert({ run_type: 'enrich_openalex', started_at: new Date().toISOString(), status: 'running' })
+    .select('id')
+    .single()
+  if (runErr) { console.error('automation_runs insert failed:', runErr.message); return }
+  const runId = runRow.id
+
+  try {
+    const { fetched, updated } = await enrichFromOpenAlex()
+    await supabase.from('automation_runs').update({
+      status: 'success',
+      completed_at: new Date().toISOString(),
+      journals_processed: fetched,
+      journals_updated: updated,
+    }).eq('id', runId)
+    console.log(`Done. Updated ${updated} / fetched ${fetched}`)
+  } catch (err) {
+    console.error('Fatal:', err.message)
+    await supabase.from('automation_runs').update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error_summary: (err.message || String(err)).slice(0, 500),
+    }).eq('id', runId)
+    process.exitCode = 1
+  }
+}
+
+main().catch((e) => { console.error(e); process.exit(1) })

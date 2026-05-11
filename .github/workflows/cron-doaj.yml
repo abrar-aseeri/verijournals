@@ -1,0 +1,39 @@
+name: cron-doaj
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'  # 1st of month, 03:00 UTC
+  workflow_dispatch:
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  doaj-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Fetch DOAJ CSV
+        run: bash scripts/fetch-source-data.sh doaj
+      - name: Import DOAJ
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/import-doaj.mjs 2>&1 | tee /tmp/run.log
+      - name: Upload log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cron-doaj-${{ github.run_id }}.log
+          path: /tmp/run.log
+          retention-days: 14
+      - name: Mark automation_runs failed
+        if: failure()
+        run: node scripts/notify-cron-failure.mjs import_doaj "GitHub Actions ${{ github.workflow }} failed (run ${{ github.run_id }})"

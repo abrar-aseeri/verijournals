@@ -5,6 +5,16 @@ import SignOutButton from './SignOutButton'
 
 export const dynamic = 'force-dynamic'
 
+const FRESHNESS_TYPES = [
+  { type: 'import_doaj', label: 'DOAJ' },
+  { type: 'import_nlm', label: 'NLM' },
+  { type: 'import_retraction_watch', label: 'Retraction Watch' },
+  { type: 'enrich_openalex', label: 'OpenAlex' },
+  { type: 'recompute_scores', label: 'Score recompute' },
+] as const
+
+const STALE_DAY_THRESHOLD = 35
+
 export default async function AdminPage() {
   const supabase = getAdmin()
   const session = await createSupabaseServer()
@@ -18,6 +28,7 @@ export default async function AdminPage() {
     { data: authList },
     { data: recentSearches },
     { data: recentReports },
+    ...freshnessResults
   ] = await Promise.all([
     supabase.from('journals').select('*', { count: 'exact', head: true }),
     supabase.from('users').select('*', { count: 'exact', head: true }),
@@ -30,7 +41,36 @@ export default async function AdminPage() {
     supabase.from('error_reports')
       .select('id, description, status, created_at, journals(title)')
       .order('created_at', { ascending: false }).limit(10),
+    ...FRESHNESS_TYPES.map((f) =>
+      supabase.from('automation_runs')
+        .select('completed_at')
+        .eq('run_type', f.type)
+        .eq('status', 'success')
+        .order('completed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then((r) => (r.data?.completed_at as string | null | undefined) ?? null)
+    ),
   ])
+
+  const now = Date.now()
+  const freshness = FRESHNESS_TYPES.map((f, i) => {
+    const completedAt = freshnessResults[i] as string | null
+    const date = completedAt ? new Date(completedAt) : null
+    const ageDays = date ? Math.floor((now - date.getTime()) / 86400000) : null
+    return {
+      type: f.type,
+      label: f.label,
+      ageDays,
+      dateText: date ? date.toISOString().slice(0, 10) : '—',
+      ageText: ageDays == null
+        ? 'Never'
+        : ageDays === 0 ? 'Today'
+        : ageDays === 1 ? '1 day ago'
+        : `${ageDays} days ago`,
+      stale: ageDays == null || ageDays > STALE_DAY_THRESHOLD,
+    }
+  })
 
   const loginsCount = (authList?.users ?? []).filter((u) => u.last_sign_in_at != null).length
 
@@ -71,6 +111,26 @@ export default async function AdminPage() {
         <p className="text-sm font-light mb-6" style={{ color: '#B2BEC4' }} dir="rtl">
           مرحباً، {user?.email ?? '—'}
         </p>
+
+        <section className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-xs uppercase tracking-wide font-semibold" style={{ color: '#0B4644' }}>
+              Source Freshness
+            </h2>
+            <span className="text-xs" style={{ color: '#B2BEC4' }}>red if &gt; {STALE_DAY_THRESHOLD} days</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {freshness.map((f) => (
+              <div key={f.type}>
+                <div className="text-xs uppercase tracking-wide mb-2" style={{ color: '#B2BEC4' }}>{f.label}</div>
+                <div className="text-sm font-semibold" style={{ color: f.stale ? '#DC2626' : '#0B4644' }}>
+                  {f.ageText}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: '#B2BEC4' }}>{f.dateText}</div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {stats.map(({ label, value, Icon }) => (

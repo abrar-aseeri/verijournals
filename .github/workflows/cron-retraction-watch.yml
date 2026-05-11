@@ -1,0 +1,39 @@
+name: cron-retraction-watch
+
+on:
+  schedule:
+    - cron: '0 5 1 * *'  # 1st of month, 05:00 UTC
+  workflow_dispatch:
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  rw-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Fetch Retraction Watch CSV
+        run: bash scripts/fetch-source-data.sh retraction-watch
+      - name: Import Retraction Watch
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/import-retraction-watch.mjs 2>&1 | tee /tmp/run.log
+      - name: Upload log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cron-retraction-watch-${{ github.run_id }}.log
+          path: /tmp/run.log
+          retention-days: 14
+      - name: Mark automation_runs failed
+        if: failure()
+        run: node scripts/notify-cron-failure.mjs import_retraction_watch "GitHub Actions ${{ github.workflow }} failed (run ${{ github.run_id }})"

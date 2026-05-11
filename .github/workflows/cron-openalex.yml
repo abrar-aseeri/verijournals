@@ -1,0 +1,37 @@
+name: cron-openalex
+
+on:
+  schedule:
+    - cron: '0 8 1 * *'  # 1st of month, 08:00 UTC
+  workflow_dispatch:
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  openalex-enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Enrich OpenAlex
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/enrich-openalex.mjs 2>&1 | tee /tmp/run.log
+      - name: Upload log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cron-openalex-${{ github.run_id }}.log
+          path: /tmp/run.log
+          retention-days: 14
+      - name: Mark automation_runs failed
+        if: failure()
+        run: node scripts/notify-cron-failure.mjs enrich_openalex "GitHub Actions ${{ github.workflow }} failed (run ${{ github.run_id }})"
