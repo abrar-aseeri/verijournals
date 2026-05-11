@@ -59,7 +59,7 @@ export function calculateScores(indexing: JournalIndexing[]): {
   risk = Math.min(risk, 100)
 
   let trust_status = 'under_evaluation'
-  if (trust >= 60 && risk < 30) trust_status = 'trusted'
+  if (trust >= 50 && risk < 30) trust_status = 'trusted'
   else if (risk >= 40) trust_status = 'high_risk'
   else if (trust >= 30) trust_status = 'review_needed'
 
