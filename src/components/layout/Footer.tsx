@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function Footer() {
   return (
     <footer style={{ background: '#0B4644' }} className="w-full mt-auto font-fs">
@@ -8,6 +10,16 @@ export default function Footer() {
             style={{ fontWeight: 700 }}
           >
             VeriJournals
+          </div>
+
+          <div className="text-sm">
+            <Link
+              href="/methodology"
+              style={{ color: '#FFFFFF', fontWeight: 600 }}
+              className="underline hover:opacity-80 transition-opacity"
+            >
+              المنهجية / Methodology
+            </Link>
           </div>
 
           <p

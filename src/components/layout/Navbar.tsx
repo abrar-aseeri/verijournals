@@ -40,6 +40,15 @@ export default function Navbar() {
             </Link>
           </li>
           <li>
+            <Link
+              href="/methodology"
+              className="transition-colors"
+              style={{ color: '#6B7280' }}
+            >
+              <span className="hover:text-[#0B4644]">المنهجية</span>
+            </Link>
+          </li>
+          <li>
             <a
               href="mailto:abrar.aseeri@hotmail.com"
               className="transition-colors"
