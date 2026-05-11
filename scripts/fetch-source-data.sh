@@ -20,5 +20,11 @@ curl -L --silent --show-error -o scripts/data/retraction-watch.csv \
 echo "    $(wc -l < scripts/data/retraction-watch.csv) lines, $(du -h scripts/data/retraction-watch.csv | cut -f1)"
 
 echo
+echo "==> NLM Catalog (ftp.ncbi.nlm.nih.gov J_Medline.txt)"
+curl -L --silent --show-error -o scripts/data/J_Medline.txt \
+  https://ftp.ncbi.nlm.nih.gov/pubmed/J_Medline.txt
+echo "    $(grep -c '^JrId:' scripts/data/J_Medline.txt) records, $(du -h scripts/data/J_Medline.txt | cut -f1)"
+
+echo
 echo "Done. Files in scripts/data/:"
 ls -la scripts/data/
