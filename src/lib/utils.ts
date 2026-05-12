@@ -32,17 +32,19 @@ export function getTrustLabel(status: string, lang: string = 'en'): string {
   const labels: Record<string, Record<string, string>> = {
     en: {
       trusted: 'Multiple Positive Indicators',
-      high_risk: 'Caution Signals Present',
+      high_risk: 'Requires Careful Verification',
       review_needed: 'Verification Recommended',
       under_evaluation: 'Limited Indexing Coverage',
       discontinued: 'Discontinued',
+      predatory: 'Requires Careful Verification (with attention signals)',
     },
     ar: {
       trusted: 'مؤشرات إيجابية متعددة',
-      high_risk: 'مؤشرات تستدعي الحذر',
-      review_needed: 'يُنصح بالتحقق',
-      under_evaluation: 'فهرسة محدودة',
+      high_risk: 'تتطلب تحققاً دقيقاً',
+      review_needed: 'يُوصى بالمراجعة',
+      under_evaluation: 'بيانات فهرسة محدودة',
       discontinued: 'متوقفة',
+      predatory: 'تتطلب تحققاً دقيقاً مع مؤشرات تستدعي الانتباه',
     },
   }
   return labels[lang]?.[status] ?? status

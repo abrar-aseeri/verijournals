@@ -6,21 +6,28 @@ interface IndicatorCardProps {
   value: string | number;
   label: string;            // e.g. "DOAJ Indexing" / "فهرسة DOAJ"
   source: string;           // e.g. "DOAJ", "NLM Catalog", "Retraction Watch"
+  license: string;          // e.g. "CC0", "CC-BY 4.0", "Public domain"
   snapshotAt: string;       // ISO date or "YYYY-MM-DD"
-  sourceUrl?: string;       // link to upstream record where available
+  sourceUrl?: string;       // upstream URL (rendered as both link AND visible text)
   confidence: Confidence;
   journalId?: string;       // for Report Discrepancy
   indicatorKey?: string;    // for Report Discrepancy
 }
 
+// Color palette mapping per spec:
+//   green   #05A854  positive (high confidence = fresh source)
+//   blue    #3B82F6  neutral/informational (medium confidence = stale-ish)
+//   gray    #B2BEC4  limited data (low confidence = no recent snapshot)
+//   amber   #F59E0B  caution (used on the journal page for status badges)
+// No red anywhere on journal-facing surfaces.
 const confidenceStyles: Record<Confidence, { ar: string; en: string; dot: string }> = {
   high:   { ar: "موثوقية عالية",  en: "High confidence",   dot: "bg-[#05A854]" },
-  medium: { ar: "موثوقية متوسطة", en: "Medium confidence", dot: "bg-[#B2BEC4]" },
-  low:    { ar: "موثوقية محدودة", en: "Limited confidence", dot: "bg-[#DC2626]" },
+  medium: { ar: "موثوقية متوسطة", en: "Medium confidence", dot: "bg-[#3B82F6]" },
+  low:    { ar: "موثوقية محدودة", en: "Limited confidence", dot: "bg-[#B2BEC4]" },
 };
 
 export default function IndicatorCard({
-  value, label, source, snapshotAt, sourceUrl, confidence,
+  value, label, source, license, snapshotAt, sourceUrl, confidence,
   journalId, indicatorKey,
 }: IndicatorCardProps) {
   const c = confidenceStyles[confidence];
@@ -57,6 +64,18 @@ export default function IndicatorCard({
             ) : source}
           </dd>
         </div>
+        {sourceUrl && (
+          <div className="flex justify-between gap-2">
+            <dt>الرابط / URL:</dt>
+            <dd className="text-[10px] font-mono truncate max-w-[60%]" title={sourceUrl}>
+              {sourceUrl}
+            </dd>
+          </div>
+        )}
+        <div className="flex justify-between gap-2">
+          <dt>الترخيص / License:</dt>
+          <dd className="font-medium">{license}</dd>
+        </div>
         <div className="flex justify-between gap-2">
           <dt>التحديث الأخير / Last verified:</dt>
           <dd>{snapshotAt}</dd>
@@ -73,7 +92,7 @@ export default function IndicatorCard({
         {reportHref && (
           <Link
             href={reportHref}
-            className="text-[#0B4644]/60 hover:text-[#DC2626] underline decoration-dotted"
+            className="text-[#0B4644]/60 hover:text-[#F59E0B] underline decoration-dotted"
             lang="en"
           >
             تنبيه عن تباين / Data correction
