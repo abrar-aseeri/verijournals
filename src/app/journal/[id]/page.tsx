@@ -7,6 +7,23 @@ import ErrorReportButton from './ErrorReportButton'
 import DownloadPdfButton from './DownloadPdfButton'
 import { estimatedImpactSignals } from '@/lib/scoring'
 import { formatContributingSources, formatVerifiedDate } from '@/lib/utils'
+import IndicatorCard, { type Confidence } from '@/components/IndicatorCard'
+
+function reasonCount(obj: Record<string, string> | null | undefined): number {
+  return obj ? Object.keys(obj).length : 0
+}
+
+function derivedConfidence(reasonsCount: number): Confidence {
+  if (reasonsCount >= 3) return 'high'
+  if (reasonsCount >= 1) return 'medium'
+  return 'low'
+}
+
+function presenceConfidence(value: unknown): Confidence {
+  return value == null || value === '' ? 'unavailable' : 'high'
+}
+
+const REPORT_ANCHOR = '#report-error'
 
 export default async function JournalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -118,100 +135,132 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
           
-          <div className="grid grid-cols-4 gap-4 p-4 rounded-xl mb-4" style={{ background: '#F8FAFC' }}>
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Trust Score</div>
-              <div className="text-2xl font-bold" style={{ color: trustColor }}>{journal.trust_score || 0}</div>
-              <div className="text-xs text-gray-400">/ 100</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Risk Score</div>
-              <div className="text-2xl font-bold text-red-500">{journal.risk_score || 0}</div>
-              <div className="text-xs text-gray-400">/ 100</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">H-Index</div>
-              <div className="text-2xl font-bold text-blue-600">{journal.h_index ?? '—'}</div>
-              <div className="text-xs text-gray-400">OpenAlex</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1 uppercase tracking-wide">Total Citations</div>
-              <div className="text-2xl font-bold text-purple-600">
-                {journal.total_cites ? journal.total_cites.toLocaleString() : '—'}
-              </div>
-              <div className="text-xs text-gray-400">all time</div>
-            </div>
-          </div>
-
-          {journal.quartile && (
-            <div className="mb-4 p-4 rounded-xl border" style={{ background: qc.bg, borderColor: qc.text + '33' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: qc.text }}>SCImago Journal Ranking</div>
-                  <div className="text-sm text-gray-600">Best Quartile (2023)</div>
-                </div>
-                <div className="text-4xl font-black" style={{ color: qc.text }}>{journal.quartile}</div>
-              </div>
-            </div>
-          )}
-
           {(() => {
             const impact = estimatedImpactSignals(journal)
-            const sjrLabel = impact.sjr != null ? impact.sjr.toFixed(3) : '—'
-            const cited2yLabel = impact.citedness_2y != null ? impact.citedness_2y.toFixed(2) : '—'
+            const trustConf = derivedConfidence(reasonCount(journal.trust_reasons))
+            const riskConf = derivedConfidence(reasonCount(journal.risk_reasons))
             return (
-              <div className="rounded-xl border border-gray-100 overflow-hidden mb-4">
-                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Estimated Impact (open sources)
-                  </span>
-                  <span className="text-xs" style={{ color: '#92400E' }} dir="rtl">
+              <>
+                <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6B7280' }}>
+                  Core indicators
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                  <IndicatorCard
+                    label="Trust score"
+                    labelAr="درجة الثقة"
+                    value={`${journal.trust_score ?? 0} / 100`}
+                    source="VeriJournals (derived from indexing)"
+                    sourceUrl="/methodology#scoring"
+                    snapshot={formatVerifiedDate(journal.last_verified_at)}
+                    confidence={trustConf}
+                    reportHref={REPORT_ANCHOR}
+                  />
+                  <IndicatorCard
+                    label="Risk score"
+                    labelAr="درجة المخاطرة"
+                    value={`${journal.risk_score ?? 0} / 100`}
+                    source="VeriJournals (derived from indexing)"
+                    sourceUrl="/methodology#scoring"
+                    snapshot={formatVerifiedDate(journal.last_verified_at)}
+                    confidence={riskConf}
+                    reportHref={REPORT_ANCHOR}
+                  />
+                  <IndicatorCard
+                    label="H-index"
+                    labelAr="مؤشر هيرش"
+                    value={journal.h_index ?? '—'}
+                    source="OpenAlex"
+                    sourceUrl="https://api.openalex.org/"
+                    confidence={presenceConfidence(journal.h_index)}
+                    reportHref={REPORT_ANCHOR}
+                  />
+                  <IndicatorCard
+                    label="Total citations"
+                    labelAr="إجمالي الاستشهادات"
+                    value={journal.total_cites ? journal.total_cites.toLocaleString() : '—'}
+                    source="OpenAlex (all time)"
+                    sourceUrl="https://api.openalex.org/"
+                    confidence={presenceConfidence(journal.total_cites)}
+                    reportHref={REPORT_ANCHOR}
+                  />
+                </div>
+
+                <div className="flex items-baseline justify-between mb-2">
+                  <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#6B7280' }}>
+                    Open-source impact indicators
+                  </div>
+                  <span className="text-xs font-fs" style={{ color: '#92400E' }} dir="rtl">
                     {impact.disclaimer}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 divide-x divide-gray-100">
-                  <div className="p-4 text-center">
-                    <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">SJR</div>
-                    <div className="text-lg font-bold text-gray-700">{sjrLabel}</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      Scimago{impact.sjr_year ? ` ${impact.sjr_year}` : ''}
-                    </div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">2-yr Citedness</div>
-                    <div className="text-lg font-bold text-gray-700">{cited2yLabel}</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      OpenAlex{impact.citedness_2y_year ? ` ${impact.citedness_2y_year}` : ''}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                  <IndicatorCard
+                    label="SCImago quartile"
+                    labelAr="رُبع SCImago"
+                    value={journal.quartile ?? '—'}
+                    source="SCImago Journal Rank"
+                    sourceUrl="https://www.scimagojr.com/"
+                    snapshot={journal.sjr_year ? `SJR ${journal.sjr_year}` : null}
+                    confidence={presenceConfidence(journal.quartile)}
+                    reportHref={REPORT_ANCHOR}
+                  />
+                  <IndicatorCard
+                    label="SJR score"
+                    labelAr="نقاط SJR"
+                    value={impact.sjr != null ? impact.sjr.toFixed(3) : '—'}
+                    source="SCImago Journal Rank"
+                    sourceUrl="https://www.scimagojr.com/"
+                    snapshot={impact.sjr_year ? `SJR ${impact.sjr_year}` : null}
+                    confidence={presenceConfidence(impact.sjr)}
+                    reportHref={REPORT_ANCHOR}
+                  />
+                  <IndicatorCard
+                    label="2-yr mean citedness"
+                    labelAr="متوسط الاستشهاد لسنتين"
+                    value={impact.citedness_2y != null ? impact.citedness_2y.toFixed(2) : '—'}
+                    source="OpenAlex summary_stats"
+                    sourceUrl="https://api.openalex.org/"
+                    snapshot={impact.citedness_2y_year ? `${impact.citedness_2y_year}` : null}
+                    confidence={presenceConfidence(impact.citedness_2y)}
+                    reportHref={REPORT_ANCHOR}
+                  />
                 </div>
-              </div>
+
+                <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6B7280' }}>
+                  Metrics requiring institutional access
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <IndicatorCard
+                    label="Impact Factor"
+                    labelAr="معامل التأثير"
+                    value="—"
+                    source="Clarivate JCR (not integrated)"
+                    sourceUrl="https://jcr.clarivate.com/"
+                    confidence="unavailable"
+                    reportHref={REPORT_ANCHOR}
+                  />
+                  <IndicatorCard
+                    label="CiteScore"
+                    labelAr="CiteScore"
+                    value="—"
+                    source="Scopus (not integrated)"
+                    sourceUrl="https://www.scopus.com/"
+                    confidence="unavailable"
+                    reportHref={REPORT_ANCHOR}
+                  />
+                  <IndicatorCard
+                    label="JCI"
+                    labelAr="JCI"
+                    value="—"
+                    source="Web of Science (not integrated)"
+                    sourceUrl="https://mjl.clarivate.com/"
+                    confidence="unavailable"
+                    reportHref={REPORT_ANCHOR}
+                  />
+                </div>
+              </>
             )
           })()}
-
-          <div className="rounded-xl border border-gray-100 overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Metrics requiring institutional access</span>
-            </div>
-            <div className="grid grid-cols-3 divide-x divide-gray-100">
-              {[
-                { label: 'Impact Factor', source: 'Clarivate JCR' },
-                { label: 'CiteScore', source: 'Scopus' },
-                { label: 'JCI', source: 'Web of Science' },
-              ].map(m => (
-                <div key={m.label} className="p-4 text-center">
-                  <div className="text-xs text-gray-400 mb-1 uppercase tracking-wide">{m.label}</div>
-                  <div className="text-lg font-bold text-gray-300">—</div>
-                  <div className="text-xs text-gray-400 mt-1">{m.source}</div>
-                  <div className="mt-2">
-                    <span className="inline-block px-2 py-0.5 rounded text-xs" style={{ background: '#FEF3C7', color: '#92400E' }}>
-                      Institutional
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="vj-card p-6 mb-4">
@@ -236,9 +285,9 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           <span className="text-sm text-amber-800">Data shown is for reference only. Not an official certified source.</span>
         </div>
 
-        <div className="vj-card p-6">
+        <div id="report-error" className="vj-card p-6 scroll-mt-20">
           <h2 className="text-sm font-semibold text-gray-700 mb-2">Found an error?</h2>
-          <p className="text-sm text-gray-500 mb-4">Help us improve data accuracy by reporting incorrect information.</p>
+          <p className="text-sm text-gray-500 mb-4">Help us improve data accuracy by reporting incorrect information. Mention the specific indicator in the description so we can route the report.</p>
           <ErrorReportButton journalId={journal.id} journalTitle={journal.title} />
         </div>
       </main>
