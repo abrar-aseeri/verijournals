@@ -11,17 +11,22 @@
 //      These are INTERNAL identifiers. They are NEVER rendered verbatim to
 //      users. The user-facing display mapping lives in
 //        src/lib/utils.ts:getTrustLabel()
-//      where they translate to softer factual labels:
-//        'Multiple Positive Indicators' / 'مؤشرات إيجابية متعددة'
-//        'Verification Recommended'     / 'يُنصح بالتحقق'
-//        'Caution Signals Present'      / 'مؤشرات تستدعي الحذر'
-//        'Limited Indexing Coverage'    / 'فهرسة محدودة'
+//      where they translate to factual indicator labels (AR primary / EN):
+//        trusted          → 'مؤشرات إيجابية متعددة'    / 'Multiple Positive Indicators'
+//        review_needed    → 'يُوصى بالمراجعة'           / 'Verification Recommended'
+//        high_risk        → 'تتطلب تحققاً دقيقاً'        / 'Requires Careful Verification'
+//        under_evaluation → 'بيانات فهرسة محدودة'      / 'Limited Indexing Coverage'
+//        predatory*       → 'تتطلب تحققاً دقيقاً مع مؤشرات تستدعي الانتباه'
+//                         / 'Requires Careful Verification (with attention signals)'
+//        (* 'predatory' is not a trust_status enum value; it is a display-layer
+//         override applied when journals.is_predatory = true, regardless of the
+//         underlying enum.)
 //      This split is an emergency Saudi Anti-Cyber Crime Law (Royal Decree
 //      M/17, Article 3) defamation-exposure mitigation. Categorical labels
 //      at the display layer carry legal risk; factual indicator labels with
 //      source attribution do not. DO NOT reintroduce raw enum values or the
-//      older categorical terminology ('Trusted', 'High Risk', 'Predatory')
-//      at the display layer without legal review.
+//      older categorical terminology ('Trusted', 'High Risk', 'Predatory',
+//      'Caution Signals Present') at the display layer without legal review.
 //
 //   2. Reason strings written to journals.trust_reasons / journals.risk_reasons:
 //      e.g. risk_reasons['bealls'] = "Listed on Beall's predatory list"
