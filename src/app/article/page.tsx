@@ -212,8 +212,11 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
                 <div className="flex items-center gap-2">
                   <span className="text-lg">⚠️</span>
                   <div>
-                    <div className="text-sm font-bold text-red-600">PREDATORY JOURNAL WARNING</div>
-                    <div className="text-xs text-red-500">This journal has been flagged as potentially predatory.</div>
+                    <div className="text-sm font-bold text-red-600">JOURNAL REQUIRES CAREFUL VERIFICATION · مجلة تتطلب تحققاً دقيقاً</div>
+                    <div className="text-xs text-red-500">This journal appears on third-party watchlists maintained outside VeriJournals. Verify independently before submitting.</div>
+                    <a href="/methodology#scoring" className="text-xs underline hover:opacity-80 mt-1 inline-block" style={{ color: '#0B4644' }}>
+                      What does this mean? · See methodology
+                    </a>
                   </div>
                 </div>
               </div>

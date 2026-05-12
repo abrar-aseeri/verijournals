@@ -1,3 +1,48 @@
+// =============================================================================
+// scoring.ts — trust/risk scoring derived from journal_indexing rows.
+//
+// LEGAL POSTURE NOTE
+// ------------------
+// The strings produced by this file fall into two categories with different
+// audiences and different legal-risk profiles:
+//
+//   1. Enum values written to journals.trust_status:
+//        'trusted' | 'review_needed' | 'high_risk' | 'under_evaluation'
+//      These are INTERNAL identifiers. They are NEVER rendered verbatim to
+//      users. The user-facing display mapping lives in
+//        src/lib/utils.ts:getTrustLabel()
+//      where they translate to softer factual labels:
+//        'Multiple Positive Indicators' / 'مؤشرات إيجابية متعددة'
+//        'Verification Recommended'     / 'يُنصح بالتحقق'
+//        'Caution Signals Present'      / 'مؤشرات تستدعي الحذر'
+//        'Limited Indexing Coverage'    / 'فهرسة محدودة'
+//      This split is an emergency Saudi Anti-Cyber Crime Law (Royal Decree
+//      M/17, Article 3) defamation-exposure mitigation. Categorical labels
+//      at the display layer carry legal risk; factual indicator labels with
+//      source attribution do not. DO NOT reintroduce raw enum values or the
+//      older categorical terminology ('Trusted', 'High Risk', 'Predatory')
+//      at the display layer without legal review.
+//
+//   2. Reason strings written to journals.trust_reasons / journals.risk_reasons:
+//      e.g. risk_reasons['bealls'] = "Listed on Beall's predatory list"
+//      These are stored in jsonb and are NOT currently rendered to users.
+//      The wording is intentionally citation-style — attributing the term
+//      to the source's own naming, not VeriJournals — which is safer than
+//      a VeriJournals-issued categorical label. If these are ever surfaced
+//      to users (journal page UI, public API responses, downloadable
+//      reports), they must go through legal review first.
+//
+// WEIGHTS AND THRESHOLDS
+// ----------------------
+// Weights (+20 / +15 / +10) and thresholds (trust >= 50, risk >= 40,
+// trust >= 30) are calibrated against the current open-source signal set
+// (DOAJ + NLM + SCImago + Retraction Watch). Changes cascade to the
+// trust_status of every journal at the next recompute AND to the published
+// methodology page at /methodology. Do not change without an explicit
+// scoring-policy review and a coordinated update to /methodology and the
+// changelog there.
+// =============================================================================
+
 import { JournalIndexing } from '@/types'
 
 export const IMPACT_SCORE_DISCLAIMER_AR =

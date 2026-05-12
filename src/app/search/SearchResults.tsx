@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import Link from 'next/link'
-import { getTrustColor, getTrustLabel, formatISSN } from '@/lib/utils'
+import { getTrustColor, getTrustLabel, formatISSN, formatContributingSources, formatVerifiedDate } from '@/lib/utils'
 
 export default function SearchResults() {
   const searchParams = useSearchParams()
@@ -64,8 +64,30 @@ export default function SearchResults() {
                       ))}
                     </div>
                   </div>
-                  <div className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${getTrustColor(journal.trust_status)}`}>
-                    {getTrustLabel(journal.trust_status)}
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <div
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${getTrustColor(journal.trust_status)}`}
+                      title="What does this mean? · ما المقصود؟ — Open journal page or visit /methodology"
+                    >
+                      {getTrustLabel(journal.trust_status)}
+                    </div>
+                    <div className="text-[11px] text-gray-500 whitespace-nowrap" title="Last verified · آخر تحقق">
+                      Verified {formatVerifiedDate(journal.last_verified_at)}
+                    </div>
+                    {(() => {
+                      const sources = formatContributingSources(journal.trust_reasons, journal.risk_reasons)
+                      if (sources.length === 0) return null
+                      const shown = sources.slice(0, 3).join(', ')
+                      const more = sources.length > 3 ? `+${sources.length - 3}` : ''
+                      return (
+                        <div
+                          className="text-[10px] text-gray-400 text-right"
+                          title={`Sources: ${sources.join(', ')} · See /methodology`}
+                        >
+                          Sources: {shown}{more}
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end">

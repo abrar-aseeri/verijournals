@@ -63,25 +63,25 @@ const riskSignals = [
 ]
 
 const thresholds = [
-  { status: 'trusted', rule: 'trust ≥ 50 AND risk < 30' },
-  { status: 'high_risk', rule: 'risk ≥ 40' },
-  { status: 'review_needed', rule: 'trust ≥ 30' },
-  { status: 'under_evaluation', rule: 'default' },
+  { status: 'Multiple Positive Indicators', rule: 'trust ≥ 50 AND risk < 30' },
+  { status: 'Caution Signals Present', rule: 'risk ≥ 40' },
+  { status: 'Verification Recommended', rule: 'trust ≥ 30' },
+  { status: 'Limited Indexing Coverage', rule: 'default' },
 ]
 
 const distributionLabels = {
-  trusted: 'موثوقة',
-  review_needed: 'مراجعة مطلوبة',
-  under_evaluation: 'تحت التقييم',
-  high_risk: 'مخاطرة عالية',
+  trusted: 'مؤشرات إيجابية متعددة',
+  review_needed: 'يُنصح بالتحقق',
+  under_evaluation: 'فهرسة محدودة',
+  high_risk: 'مؤشرات تستدعي الحذر',
 } as const
 
 type DistributionRow = { labelAr: string; labelEn: keyof typeof distributionLabels; count: string; pct: string }
 
 const limitations = [
   {
-    ar: 'غياب Scopus و WoS: التقييم الحالي يعتمد على مصادر مفتوحة فقط. لا يصل أي مجلة إلى تصنيف "موثوقة" بدون توفّر DOAJ + NLM + SCImago مجتمعة.',
-    en: 'Scopus and Web of Science are not integrated. The current signal set is open-source only; no journal reaches "trusted" without DOAJ + NLM + SCImago in combination.',
+    ar: 'غياب Scopus و WoS: التقييم الحالي يعتمد على مصادر مفتوحة فقط. لا تصل أي مجلة إلى تصنيف "مؤشرات إيجابية متعددة" بدون توفّر DOAJ + NLM + SCImago مجتمعة.',
+    en: 'Scopus and Web of Science are not integrated. The current signal set is open-source only; no journal reaches "Multiple Positive Indicators" status without DOAJ + NLM + SCImago in combination.',
   },
   {
     ar: 'نافذة Retraction Watch: 2021–2023 فقط، حتى تطابق نافذة SCImago SJR في حساب نسبة السحب.',
@@ -111,7 +111,7 @@ const references = [
 
 const changelog = [
   { date: '2026-05-11', ar: 'إعادة حساب الدرجات من journal_indexing لأول مرة لـ 61,486 مجلة.', en: 'First full recompute of trust/risk scores from journal_indexing (61,486 journals).' },
-  { date: '2026-05-11', ar: 'تخفيض عتبة "موثوقة" من 60 إلى 50 لتتناسب مع المصادر المفتوحة المتاحة.', en: 'Trusted threshold lowered from 60 → 50 to match the open-source signal ceiling.', commit: '4b87ffc' },
+  { date: '2026-05-11', ar: 'تخفيض عتبة "مؤشرات إيجابية متعددة" من 60 إلى 50 لتتناسب مع المصادر المفتوحة المتاحة.', en: '"Multiple Positive Indicators" threshold lowered from 60 → 50 to match the open-source signal ceiling.', commit: '4b87ffc' },
   { date: '2026-05-11', ar: 'استيراد Retraction Watch مع نافذة 2021–2023.', en: 'Retraction Watch windowed import (2021–2023).', commit: 'a20ff89' },
   { date: '2026-05-11', ar: 'استيراد فهرس NLM/PubMed.', en: 'NLM/PubMed catalogue imported.', commit: '2ca0da4' },
   { date: '2026-05-10', ar: 'استيراد قاعدة DOAJ.', en: 'DOAJ imported as the first open-access signal.', commit: '11bf8e1' },
@@ -176,7 +176,7 @@ export default async function MethodologyPage() {
           </div>
         </section>
 
-        <section className="px-6 pb-12">
+        <section id="sources" className="px-6 pb-12 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <SectionHeading ar="مصادر البيانات" en="Data Sources" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -212,7 +212,7 @@ export default async function MethodologyPage() {
           </div>
         </section>
 
-        <section className="px-6 pb-12">
+        <section id="scoring" className="px-6 pb-12 scroll-mt-20">
           <div className="max-w-4xl mx-auto">
             <SectionHeading ar="كيف نحسب الدرجة" en="How the Score is Calculated" />
 

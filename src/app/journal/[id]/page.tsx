@@ -6,6 +6,7 @@ import Link from 'next/link'
 import ErrorReportButton from './ErrorReportButton'
 import DownloadPdfButton from './DownloadPdfButton'
 import { estimatedImpactSignals } from '@/lib/scoring'
+import { formatContributingSources, formatVerifiedDate } from '@/lib/utils'
 
 export default async function JournalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,9 +27,11 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
   const trustBg = isPredatory ? '#FEE2E2' :
                   journal.trust_status === 'trusted' ? '#DCFCE7' :
                   journal.trust_status === 'high_risk' ? '#FEE2E2' : '#FEF3C7'
-  const trustLabel = isPredatory ? '⚠️ Predatory Journal' :
-                     journal.trust_status === 'trusted' ? 'Trusted' : 
-                     journal.trust_status === 'high_risk' ? 'High Risk' : 'Under Evaluation'
+  const trustLabel = isPredatory ? 'Journal Requires Careful Verification' :
+                     journal.trust_status === 'trusted' ? 'Multiple Positive Indicators' :
+                     journal.trust_status === 'high_risk' ? 'Caution Signals Present' :
+                     journal.trust_status === 'review_needed' ? 'Verification Recommended' :
+                     'Limited Indexing Coverage'
 
   const quartileColor = (q: string | null) => {
     if (!q) return { bg: '#F3F4F6', text: '#6B7280' }
@@ -60,8 +63,12 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           <div className="mb-4 p-4 rounded-xl border-2 flex items-start gap-3" style={{ background: '#FFF1F2', borderColor: '#FF3D5A' }}>
             <span className="text-2xl">⚠️</span>
             <div>
-              <div className="font-bold text-red-700 text-sm mb-1">PREDATORY JOURNAL WARNING</div>
-              <div className="text-sm text-red-600">This journal has been identified as predatory or fraudulent. Publishing in this journal may harm your academic reputation. Verify through official sources before submitting.</div>
+              <div className="font-bold text-red-700 text-sm mb-1">JOURNAL REQUIRES CAREFUL VERIFICATION · مجلة تتطلب تحققاً دقيقاً</div>
+              <div className="text-sm text-red-600">This journal appears on one or more third-party watchlists maintained outside VeriJournals (e.g. Beall&apos;s List, Hijacked Journals). Please verify the journal&apos;s legitimacy through your institution and independent sources before submitting.</div>
+              <div className="text-sm text-red-600 mt-1" dir="rtl">هذه المجلة مدرجة في قائمة أو أكثر من قوائم المراقبة الخارجية. يُرجى التحقق من شرعيتها عبر مؤسستك ومصادر مستقلة قبل التقديم.</div>
+              <Link href="/methodology#scoring" className="text-xs underline hover:opacity-80 mt-2 inline-block" style={{ color: '#0B4644' }}>
+                What does this mean? · See methodology
+              </Link>
             </div>
           </div>
         )}
@@ -76,17 +83,38 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
                 {journal.country && <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">{journal.country}</span>}
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <span className="px-4 py-1.5 rounded-full text-sm font-semibold flex-shrink-0"
-                style={{ background: trustBg, color: trustColor }}>
+            <div className="flex flex-col items-end gap-2 text-right">
+              <Link
+                href="/methodology#scoring"
+                title="What does this mean? · ما المقصود؟ — See methodology"
+                className="px-4 py-1.5 rounded-full text-sm font-semibold flex-shrink-0 inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                style={{ background: trustBg, color: trustColor }}
+              >
                 {trustLabel}
-              </span>
+                <span className="text-xs opacity-70" aria-hidden>ⓘ</span>
+              </Link>
               {journal.quartile && (
                 <span className="px-3 py-1 rounded-full text-sm font-bold flex-shrink-0"
                   style={{ background: qc.bg, color: qc.text }}>
                   SCImago {journal.quartile}
                 </span>
               )}
+              {(() => {
+                const sources = formatContributingSources(journal.trust_reasons, journal.risk_reasons)
+                return (
+                  <div className="text-xs flex flex-col items-end gap-0.5 mt-1" style={{ color: '#6B7280' }}>
+                    <div>Last verified: {formatVerifiedDate(journal.last_verified_at)}</div>
+                    <Link
+                      href="/methodology#sources"
+                      title="Source citations · See methodology"
+                      className="underline hover:opacity-80"
+                      style={{ color: '#0B4644' }}
+                    >
+                      {sources.length > 0 ? `Sources: ${sources.join(', ')}` : 'Sources: not yet indexed'}
+                    </Link>
+                  </div>
+                )
+              })()}
             </div>
           </div>
           

@@ -48,7 +48,7 @@ export default function ErrorReportButton({ journalId, journalTitle }: { journal
           <option value="wrong_country">Wrong Country</option>
           <option value="wrong_trust_score">Wrong Trust Score</option>
           <option value="journal_discontinued">Journal Discontinued</option>
-          <option value="predatory_journal">Predatory Journal</option>
+          <option value="predatory_journal">Journal Requires Careful Verification / مجلة تتطلب تحققاً دقيقاً</option>
           <option value="other">Other</option>
         </select>
       </div>

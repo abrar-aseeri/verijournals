@@ -21,24 +21,64 @@ export function getTrustColor(status: string): string {
   }
 }
 
+// Display-layer status labels.
+// LEGAL: These labels are intentionally factual ("indicator" framing) rather
+// than categorical judgments. Do not reintroduce the older terminology
+// ("Trusted", "High Risk", "Predatory") at the display layer without legal
+// review — Saudi Anti-Cyber Crime Law Article 3 exposure on the prior copy.
+// The DB enum values (trusted / high_risk / review_needed / under_evaluation)
+// remain unchanged — only the rendered strings are softened here.
 export function getTrustLabel(status: string, lang: string = 'en'): string {
   const labels: Record<string, Record<string, string>> = {
     en: {
-      trusted: 'Trusted Journal',
-      high_risk: 'High Risk — Potentially Predatory',
-      review_needed: 'Review Needed',
-      under_evaluation: 'Under Evaluation',
+      trusted: 'Multiple Positive Indicators',
+      high_risk: 'Caution Signals Present',
+      review_needed: 'Verification Recommended',
+      under_evaluation: 'Limited Indexing Coverage',
       discontinued: 'Discontinued',
     },
     ar: {
-      trusted: 'مجلة موثوقة',
-      high_risk: 'خطر عالٍ — مجلة مشبوهة',
-      review_needed: 'تحتاج مراجعة',
-      under_evaluation: 'تحت التقييم',
+      trusted: 'مؤشرات إيجابية متعددة',
+      high_risk: 'مؤشرات تستدعي الحذر',
+      review_needed: 'يُنصح بالتحقق',
+      under_evaluation: 'فهرسة محدودة',
       discontinued: 'متوقفة',
     },
   }
   return labels[lang]?.[status] ?? status
+}
+
+// Returns the list of upstream sources that contributed to a journal's
+// current trust/risk status, mapped to display names. Source attribution
+// is part of the legal posture: render these alongside every status badge
+// so users see WHICH third-party sources backed our display, not just a
+// VeriJournals-issued label.
+const SOURCE_NAMES: Record<string, string> = {
+  nlm: 'NLM',
+  doaj: 'DOAJ',
+  crossref: 'Crossref',
+  scimago: 'SCImago',
+  scopus: 'Scopus',
+  wos: 'Web of Science',
+  bealls: "Beall's List",
+  hijacked: 'Hijacked Journals',
+  retraction: 'Retraction Watch',
+}
+
+export function formatContributingSources(
+  trustReasons: Record<string, string> | null | undefined,
+  riskReasons: Record<string, string> | null | undefined,
+): string[] {
+  const keys = new Set<string>([
+    ...Object.keys(trustReasons ?? {}),
+    ...Object.keys(riskReasons ?? {}),
+  ])
+  return [...keys].map((k) => SOURCE_NAMES[k]).filter(Boolean)
+}
+
+export function formatVerifiedDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return new Date(iso).toISOString().slice(0, 10)
 }
 
 export function getAvailabilityLabel(availability: string, lang: string = 'en'): string {
