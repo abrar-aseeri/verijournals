@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { snapshotFile } from './lib/snapshot.mjs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -24,6 +25,14 @@ function parseCSVLine(line) {
 async function importAllSJR() {
   console.log('Reading SCImago CSV...')
   const csvPath = resolve('scripts/sjr2023.csv')
+
+  await snapshotFile(supabase, {
+    sourceName: 'scimago',
+    filePath: csvPath,
+    queryUrl: 'https://www.scimagojr.com/journalrank.php',
+    extra: { import_kind: 'sjr_2023_csv', sjr_year: 2023 },
+  })
+
   const lines = readFileSync(csvPath, 'utf-8').split('\n').filter(l => l.trim())
   console.log(`Total journals to import: ${lines.length - 1}`)
 

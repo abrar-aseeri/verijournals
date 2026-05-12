@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { snapshotFile } from './lib/snapshot.mjs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -70,6 +71,13 @@ async function main() {
   let inserted = 0
 
   try {
+    await snapshotFile(supabase, {
+      sourceName: 'doaj',
+      filePath: CSV_PATH,
+      queryUrl: 'https://doaj.org/csv',
+      extra: { import_kind: 'doaj_csv_v1' },
+    })
+
     console.log(`Reading ${CSV_PATH}…`)
     const text = readFileSync(CSV_PATH, 'utf-8')
     const rows = parseCSV(text)

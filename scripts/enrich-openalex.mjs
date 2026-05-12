@@ -4,6 +4,7 @@
 // Run:  node --env-file=.env.local scripts/enrich-openalex.mjs
 
 import { createClient } from '@supabase/supabase-js'
+import { snapshotApiRun } from './lib/snapshot.mjs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -89,6 +90,12 @@ async function main() {
   const runId = runRow.id
 
   try {
+    await snapshotApiRun(supabase, {
+      sourceName: 'openalex',
+      queryUrl: 'https://api.openalex.org/sources',
+      extra: { import_kind: 'openalex_summary_stats_v1' },
+    })
+
     const { fetched, updated } = await enrichFromOpenAlex()
     await supabase.from('automation_runs').update({
       status: 'success',

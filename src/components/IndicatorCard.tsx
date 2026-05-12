@@ -1,96 +1,85 @@
-import Link from 'next/link'
-import type { ReactNode } from 'react'
+import Link from "next/link";
 
-// Display a single journal-level indicator with explicit source attribution,
-// snapshot timestamp, and confidence level. Used uniformly across every
-// indicator on /journal/[id] so users can see WHICH third-party source
-// backed each number, when it was last refreshed, and how reliable it is.
-// Part of the M.3 defamation-mitigation posture: every indicator is framed
-// as factual signal with attribution, not as VeriJournals editorial judgment.
-
-export type Confidence = 'high' | 'medium' | 'low' | 'unavailable'
+type Confidence = "high" | "medium" | "low";
 
 interface IndicatorCardProps {
-  label: string
-  labelAr?: string
-  value: ReactNode
-  source: string
-  sourceUrl?: string
-  snapshot?: string | null
-  confidence: Confidence
-  reportHref?: string
+  value: string | number;
+  label: string;            // e.g. "DOAJ Indexing" / "فهرسة DOAJ"
+  source: string;           // e.g. "DOAJ", "NLM Catalog", "Retraction Watch"
+  snapshotAt: string;       // ISO date or "YYYY-MM-DD"
+  sourceUrl?: string;       // link to upstream record where available
+  confidence: Confidence;
+  journalId?: string;       // for Report Discrepancy
+  indicatorKey?: string;    // for Report Discrepancy
 }
 
-const CONFIDENCE_META: Record<
-  Confidence,
-  { dot: string; ring: string; title: string; valueColor: string }
-> = {
-  high:        { dot: '#05A854', ring: '#05A854', title: 'High confidence — direct from named source', valueColor: '#0B4644' },
-  medium:      { dot: '#FFB020', ring: '#FFB020', title: 'Medium confidence — derived signal',         valueColor: '#0B4644' },
-  low:         { dot: '#B2BEC4', ring: '#B2BEC4', title: 'Low confidence — sparse data',               valueColor: '#0B4644' },
-  unavailable: { dot: '#E5E7EB', ring: '#E5E7EB', title: 'Not collected at this tier',                 valueColor: '#B2BEC4' },
-}
+const confidenceStyles: Record<Confidence, { ar: string; en: string; dot: string }> = {
+  high:   { ar: "موثوقية عالية",  en: "High confidence",   dot: "bg-[#05A854]" },
+  medium: { ar: "موثوقية متوسطة", en: "Medium confidence", dot: "bg-[#B2BEC4]" },
+  low:    { ar: "موثوقية محدودة", en: "Limited confidence", dot: "bg-[#DC2626]" },
+};
 
 export default function IndicatorCard({
-  label,
-  labelAr,
-  value,
-  source,
-  sourceUrl,
-  snapshot,
-  confidence,
-  reportHref,
+  value, label, source, snapshotAt, sourceUrl, confidence,
+  journalId, indicatorKey,
 }: IndicatorCardProps) {
-  const meta = CONFIDENCE_META[confidence]
+  const c = confidenceStyles[confidence];
+  const reportHref = journalId && indicatorKey
+    ? `/report-discrepancy?journal=${encodeURIComponent(journalId)}&indicator=${encodeURIComponent(indicatorKey)}`
+    : null;
+
   return (
     <div
-      className="bg-white rounded-2xl p-4 flex flex-col gap-1.5"
-      style={{ border: `1px solid ${meta.ring}33` }}
+      dir="rtl"
+      className="rounded-xl border border-[#B2BEC4]/40 bg-white p-4 shadow-sm hover:shadow transition"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-xs uppercase tracking-wide font-semibold" style={{ color: '#6B7280' }}>
-          {label}
-          {labelAr && (
-            <span dir="rtl" className="ms-2 font-fs normal-case font-normal" style={{ color: '#B2BEC4' }}>
-              {labelAr}
-            </span>
-          )}
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="font-fs text-sm text-[#0B4644]/80">{label}</div>
+        <div className="flex items-center gap-1.5 text-xs text-[#0B4644]/60">
+          <span className={`h-2 w-2 rounded-full ${c.dot}`} aria-hidden />
+          <span lang="ar">{c.ar}</span>
         </div>
-        <span
-          className="inline-block w-2 h-2 rounded-full mt-1 flex-shrink-0"
-          style={{ background: meta.dot }}
-          title={meta.title}
-          aria-label={meta.title}
-        />
       </div>
-      <div className="text-2xl font-bold leading-tight" style={{ color: meta.valueColor }}>
+
+      <div className="mt-2 font-fs text-2xl font-semibold text-[#0B4644]">
         {value}
       </div>
-      <div className="text-[11px] flex items-center flex-wrap gap-x-1.5" style={{ color: '#B2BEC4' }}>
-        {sourceUrl ? (
-          <a
-            href={sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-            style={{ color: '#6B7280' }}
-          >
-            {source}
-          </a>
-        ) : (
-          <span style={{ color: '#6B7280' }}>{source}</span>
-        )}
-        {snapshot && <span>· {snapshot}</span>}
-      </div>
-      {reportHref && (
+
+      <dl className="mt-3 space-y-1 text-xs text-[#0B4644]/70">
+        <div className="flex justify-between gap-2">
+          <dt>المصدر / Source:</dt>
+          <dd className="font-medium">
+            {sourceUrl ? (
+              <a href={sourceUrl} target="_blank" rel="noopener noreferrer"
+                 className="underline decoration-dotted hover:text-[#05A854]">
+                {source}
+              </a>
+            ) : source}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt>التحديث الأخير / Last verified:</dt>
+          <dd>{snapshotAt}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-3 flex items-center justify-between text-xs">
         <Link
-          href={reportHref}
-          className="text-[11px] underline hover:opacity-80 self-start mt-0.5"
-          style={{ color: '#0B4644' }}
+          href="/methodology#sources"
+          className="text-[#0B4644]/60 hover:text-[#05A854] underline decoration-dotted"
         >
-          Report discrepancy
+          المنهجية / Methodology
         </Link>
-      )}
+        {reportHref && (
+          <Link
+            href={reportHref}
+            className="text-[#0B4644]/60 hover:text-[#DC2626] underline decoration-dotted"
+            lang="en"
+          >
+            تنبيه عن تباين / Data correction
+          </Link>
+        )}
+      </div>
     </div>
-  )
+  );
 }

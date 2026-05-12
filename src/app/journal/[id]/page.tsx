@@ -1,4 +1,5 @@
 import { getAdmin } from '@/lib/supabase'
+import { createSupabaseServer } from '@/lib/supabase-server'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { notFound } from 'next/navigation'
@@ -7,35 +8,116 @@ import ErrorReportButton from './ErrorReportButton'
 import DownloadPdfButton from './DownloadPdfButton'
 import { estimatedImpactSignals } from '@/lib/scoring'
 import { formatContributingSources, formatVerifiedDate } from '@/lib/utils'
-import IndicatorCard, { type Confidence } from '@/components/IndicatorCard'
+import IndicatorCard from '@/components/IndicatorCard'
 
-function reasonCount(obj: Record<string, string> | null | undefined): number {
-  return obj ? Object.keys(obj).length : 0
+const SOURCE_DISPLAY_NAME: Record<string, string> = {
+  doaj: 'DOAJ',
+  nlm: 'NLM / PubMed',
+  retraction_watch: 'Retraction Watch',
+  openalex: 'OpenAlex',
+  scimago: 'SCImago',
 }
 
-function derivedConfidence(reasonsCount: number): Confidence {
-  if (reasonsCount >= 3) return 'high'
-  if (reasonsCount >= 1) return 'medium'
+type SnapshotRow = {
+  id: string
+  source_name: string
+  fetched_at: string
+  http_status: number | null
+  response_hash: string | null
+  response_raw: Record<string, unknown> | null
+}
+
+function summarizeSnapshot(s: SnapshotRow): string {
+  const raw = s.response_raw
+  if (!raw) return '—'
+  const parts: string[] = []
+  if (typeof raw.import_kind === 'string') parts.push(raw.import_kind)
+  if (typeof raw.file_bytes === 'number') parts.push(`${Math.round(raw.file_bytes / 1024)} KB`)
+  if (typeof raw.intent === 'string') parts.push(raw.intent)
+  return parts.length ? parts.join(' · ') : '—'
+}
+
+type Confidence = 'high' | 'medium' | 'low'
+
+// Age-based confidence per Phase 3 spec: <30d fresh, 30-90d stale,
+// >90d cold. Falls back to 'low' when no snapshot is available at all.
+function ageDaysToConfidence(ageDays: number | null): Confidence {
+  if (ageDays == null) return 'low'
+  if (ageDays < 30) return 'high'
+  if (ageDays <= 90) return 'medium'
   return 'low'
 }
 
-function presenceConfidence(value: unknown): Confidence {
-  return value == null || value === '' ? 'unavailable' : 'high'
+function ageDaysOf(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
 }
 
-const REPORT_ANCHOR = '#report-error'
+const SOURCE_NAMES = ['doaj', 'nlm', 'retraction_watch', 'openalex', 'scimago'] as const
+type SourceName = typeof SOURCE_NAMES[number]
 
 export default async function JournalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = getAdmin()
-  
-  const { data: journal } = await supabase
-    .from('journals')
-    .select('*')
-    .eq('id', id)
-    .single()
+
+  // Parallel: journal record + latest source_snapshots row per source.
+  // source_snapshots is the canonical "when did upstream Y last give us
+  // data" timestamp. Falls back to journal.last_verified_at when no
+  // snapshot row exists yet for that source (true today — populated only
+  // once cron-triggered importers run with the Task 2 changes).
+  const [{ data: journal }, ...snapshotResults] = await Promise.all([
+    supabase.from('journals').select('*').eq('id', id).single(),
+    ...SOURCE_NAMES.map((s) =>
+      supabase.from('source_snapshots')
+        .select('id, source_name, fetched_at, http_status, response_hash, response_raw')
+        .eq('source_name', s)
+        .order('fetched_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    ),
+  ])
 
   if (!journal) notFound()
+
+  // Build the trail (rows with actual data) and the per-source lookup table.
+  const verificationTrail: SnapshotRow[] = snapshotResults
+    .map((r) => r.data as SnapshotRow | null)
+    .filter((r): r is SnapshotRow => r !== null)
+  const sourceSnapshotAt: Record<SourceName, string | null> = Object.fromEntries(
+    SOURCE_NAMES.map((s, i) => [s, (snapshotResults[i].data as { fetched_at?: string } | null)?.fetched_at ?? null])
+  ) as Record<SourceName, string | null>
+
+  // Admin gate for the "raw payload" expander in the Verification Trail.
+  const sessionClient = await createSupabaseServer()
+  const { data: { user: viewer } } = await sessionClient.auth.getUser()
+  let viewerIsAdmin = false
+  if (viewer) {
+    const { data: viewerProfile } = await sessionClient
+      .from('users')
+      .select('role')
+      .eq('auth_id', viewer.id)
+      .maybeSingle()
+    viewerIsAdmin = viewerProfile?.role === 'admin'
+  }
+
+  // Per-indicator helpers: pick the source's snapshot ISO; fall back to
+  // the journal-level last_verified_at. For derived indicators
+  // (trust/risk score) take the FRESHEST of the three indexing-source
+  // snapshots (doaj / nlm / retraction_watch / scimago) since the
+  // derived value is only as fresh as the youngest input that fed it.
+  function snapshotIsoFor(source: SourceName): string | null {
+    return sourceSnapshotAt[source] ?? journal.last_verified_at ?? null
+  }
+  function derivedSnapshotIso(): string | null {
+    const candidates = (['doaj', 'nlm', 'retraction_watch', 'scimago'] as SourceName[])
+      .map((s) => sourceSnapshotAt[s])
+      .filter((v): v is string => !!v)
+    if (candidates.length === 0) return journal.last_verified_at ?? null
+    return candidates.reduce((a, b) => (a > b ? a : b))
+  }
+  function formatIso(iso: string | null): string {
+    return iso ? new Date(iso).toISOString().slice(0, 10) : '—'
+  }
 
   const isPredatory = journal.is_predatory === true
   const trustColor = isPredatory ? '#DC2626' :
@@ -137,51 +219,54 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
           
           {(() => {
             const impact = estimatedImpactSignals(journal)
-            const trustConf = derivedConfidence(reasonCount(journal.trust_reasons))
-            const riskConf = derivedConfidence(reasonCount(journal.risk_reasons))
+            const openalexIso = snapshotIsoFor('openalex')
+            const scimagoIso = snapshotIsoFor('scimago')
+            const derivedIso = derivedSnapshotIso()
             return (
               <>
                 <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6B7280' }}>
                   Core indicators
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
                   <IndicatorCard
-                    label="Trust score"
-                    labelAr="درجة الثقة"
+                    label="Trust score / درجة الثقة"
                     value={`${journal.trust_score ?? 0} / 100`}
                     source="VeriJournals (derived from indexing)"
                     sourceUrl="/methodology#scoring"
-                    snapshot={formatVerifiedDate(journal.last_verified_at)}
-                    confidence={trustConf}
-                    reportHref={REPORT_ANCHOR}
+                    snapshotAt={formatIso(derivedIso)}
+                    confidence={ageDaysToConfidence(ageDaysOf(derivedIso))}
+                    journalId={journal.id}
+                    indicatorKey="trust_score"
                   />
                   <IndicatorCard
-                    label="Risk score"
-                    labelAr="درجة المخاطرة"
+                    label="Risk score / درجة المخاطرة"
                     value={`${journal.risk_score ?? 0} / 100`}
                     source="VeriJournals (derived from indexing)"
                     sourceUrl="/methodology#scoring"
-                    snapshot={formatVerifiedDate(journal.last_verified_at)}
-                    confidence={riskConf}
-                    reportHref={REPORT_ANCHOR}
+                    snapshotAt={formatIso(derivedIso)}
+                    confidence={ageDaysToConfidence(ageDaysOf(derivedIso))}
+                    journalId={journal.id}
+                    indicatorKey="risk_score"
                   />
                   <IndicatorCard
-                    label="H-index"
-                    labelAr="مؤشر هيرش"
+                    label="H-index / مؤشر هيرش"
                     value={journal.h_index ?? '—'}
                     source="OpenAlex"
                     sourceUrl="https://api.openalex.org/"
-                    confidence={presenceConfidence(journal.h_index)}
-                    reportHref={REPORT_ANCHOR}
+                    snapshotAt={formatIso(openalexIso)}
+                    confidence={ageDaysToConfidence(ageDaysOf(openalexIso))}
+                    journalId={journal.id}
+                    indicatorKey="h_index"
                   />
                   <IndicatorCard
-                    label="Total citations"
-                    labelAr="إجمالي الاستشهادات"
+                    label="Total citations / إجمالي الاستشهادات"
                     value={journal.total_cites ? journal.total_cites.toLocaleString() : '—'}
                     source="OpenAlex (all time)"
                     sourceUrl="https://api.openalex.org/"
-                    confidence={presenceConfidence(journal.total_cites)}
-                    reportHref={REPORT_ANCHOR}
+                    snapshotAt={formatIso(openalexIso)}
+                    confidence={ageDaysToConfidence(ageDaysOf(openalexIso))}
+                    journalId={journal.id}
+                    indicatorKey="total_cites"
                   />
                 </div>
 
@@ -193,70 +278,47 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
                     {impact.disclaimer}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <IndicatorCard
-                    label="SCImago quartile"
-                    labelAr="رُبع SCImago"
+                    label="SCImago quartile / رُبع SCImago"
                     value={journal.quartile ?? '—'}
                     source="SCImago Journal Rank"
                     sourceUrl="https://www.scimagojr.com/"
-                    snapshot={journal.sjr_year ? `SJR ${journal.sjr_year}` : null}
-                    confidence={presenceConfidence(journal.quartile)}
-                    reportHref={REPORT_ANCHOR}
+                    snapshotAt={formatIso(scimagoIso)}
+                    confidence={ageDaysToConfidence(ageDaysOf(scimagoIso))}
+                    journalId={journal.id}
+                    indicatorKey="quartile"
                   />
                   <IndicatorCard
-                    label="SJR score"
-                    labelAr="نقاط SJR"
+                    label="SJR score / نقاط SJR"
                     value={impact.sjr != null ? impact.sjr.toFixed(3) : '—'}
                     source="SCImago Journal Rank"
                     sourceUrl="https://www.scimagojr.com/"
-                    snapshot={impact.sjr_year ? `SJR ${impact.sjr_year}` : null}
-                    confidence={presenceConfidence(impact.sjr)}
-                    reportHref={REPORT_ANCHOR}
+                    snapshotAt={formatIso(scimagoIso)}
+                    confidence={ageDaysToConfidence(ageDaysOf(scimagoIso))}
+                    journalId={journal.id}
+                    indicatorKey="sjr_score"
                   />
                   <IndicatorCard
-                    label="2-yr mean citedness"
-                    labelAr="متوسط الاستشهاد لسنتين"
+                    label="2-yr mean citedness / متوسط الاستشهاد لسنتين"
                     value={impact.citedness_2y != null ? impact.citedness_2y.toFixed(2) : '—'}
                     source="OpenAlex summary_stats"
                     sourceUrl="https://api.openalex.org/"
-                    snapshot={impact.citedness_2y_year ? `${impact.citedness_2y_year}` : null}
-                    confidence={presenceConfidence(impact.citedness_2y)}
-                    reportHref={REPORT_ANCHOR}
+                    snapshotAt={formatIso(openalexIso)}
+                    confidence={ageDaysToConfidence(ageDaysOf(openalexIso))}
+                    journalId={journal.id}
+                    indicatorKey="citedness_2y"
                   />
                 </div>
 
-                <div className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#6B7280' }}>
-                  Metrics requiring institutional access
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <IndicatorCard
-                    label="Impact Factor"
-                    labelAr="معامل التأثير"
-                    value="—"
-                    source="Clarivate JCR (not integrated)"
-                    sourceUrl="https://jcr.clarivate.com/"
-                    confidence="unavailable"
-                    reportHref={REPORT_ANCHOR}
-                  />
-                  <IndicatorCard
-                    label="CiteScore"
-                    labelAr="CiteScore"
-                    value="—"
-                    source="Scopus (not integrated)"
-                    sourceUrl="https://www.scopus.com/"
-                    confidence="unavailable"
-                    reportHref={REPORT_ANCHOR}
-                  />
-                  <IndicatorCard
-                    label="JCI"
-                    labelAr="JCI"
-                    value="—"
-                    source="Web of Science (not integrated)"
-                    sourceUrl="https://mjl.clarivate.com/"
-                    confidence="unavailable"
-                    reportHref={REPORT_ANCHOR}
-                  />
+                <div className="rounded-xl border border-gray-100 p-4 text-sm" style={{ background: '#F8FAFC', color: '#6B7280' }}>
+                  <div dir="rtl" className="font-fs mb-1" style={{ color: '#0B4644' }}>
+                    مؤشرات تتطلب اشتراكاً مؤسسياً
+                  </div>
+                  <div className="text-xs">
+                    Impact Factor (Clarivate JCR), CiteScore (Scopus), and JCI (Web of Science) require licensed
+                    institutional access and are not currently integrated into VeriJournals. See <Link href="/methodology#sources" className="underline hover:opacity-80" style={{ color: '#0B4644' }}>methodology</Link> for the open sources we use today.
+                  </div>
                 </div>
               </>
             )
@@ -283,6 +345,60 @@ export default async function JournalPage({ params }: { params: Promise<{ id: st
 
         <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-xl mb-4">
           <span className="text-sm text-amber-800">Data shown is for reference only. Not an official certified source.</span>
+        </div>
+
+        <div className="vj-card p-6 mb-4">
+          <h2 className="text-sm font-semibold mb-1" style={{ color: '#0B4644' }} dir="rtl">
+            مسار التحقق
+          </h2>
+          <div className="text-xs mb-3" style={{ color: '#6B7280' }}>
+            Verification Trail · upstream snapshots that contributed to this journal&apos;s record. Append-only evidence: each row is the source response we processed on a given date.
+          </div>
+          {verificationTrail.length === 0 ? (
+            <div className="text-xs italic" style={{ color: '#B2BEC4' }}>
+              No source snapshots recorded yet. The first scheduled cron run (1st of next month) will begin populating this trail.
+              <br />
+              <span dir="rtl">لم تُسجَّل أي لقطة مصدر بعد. ستبدأ التعبئة في أول تشغيل دوري للمصادر.</span>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {verificationTrail.map((s) => (
+                <div key={s.id} className="py-3">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-semibold text-sm" style={{ color: '#0B4644' }}>
+                        {SOURCE_DISPLAY_NAME[s.source_name] ?? s.source_name}
+                      </span>
+                      <span className="text-xs" style={{ color: '#6B7280' }}>
+                        {new Date(s.fetched_at).toISOString().slice(0, 19).replace('T', ' ')} UTC
+                      </span>
+                      {s.http_status != null && (
+                        <span className="text-xs" style={{ color: '#B2BEC4' }}>HTTP {s.http_status}</span>
+                      )}
+                    </div>
+                    {s.response_hash && (
+                      <code className="text-[10px]" style={{ color: '#B2BEC4' }}>
+                        sha256: {s.response_hash.slice(0, 12)}…
+                      </code>
+                    )}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: '#6B7280' }}>
+                    {summarizeSnapshot(s)}
+                  </div>
+                  {viewerIsAdmin && s.response_raw && (
+                    <details className="mt-2">
+                      <summary className="text-xs cursor-pointer hover:underline" style={{ color: '#0B4644' }}>
+                        Show raw payload (admin)
+                      </summary>
+                      <pre className="mt-2 text-[10px] overflow-x-auto rounded p-2" style={{ background: '#F8FAFC', color: '#0B4644', maxHeight: '320px' }}>
+{JSON.stringify(s.response_raw, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div id="report-error" className="vj-card p-6 scroll-mt-20">

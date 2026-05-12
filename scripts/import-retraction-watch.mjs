@@ -10,6 +10,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { snapshotFile } from './lib/snapshot.mjs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -140,6 +141,17 @@ async function main() {
   let upserted = 0
 
   try {
+    await snapshotFile(supabase, {
+      sourceName: 'retraction_watch',
+      filePath: CSV_PATH,
+      queryUrl: RW_SOURCE_URL,
+      extra: {
+        import_kind: 'rw_csv_via_crossref_doi',
+        window_from: RETRACTION_WINDOW_FROM,
+        window_to: RETRACTION_WINDOW_TO,
+      },
+    })
+
     console.log(`Reading ${CSV_PATH}…`)
     const text = readFileSync(CSV_PATH, 'utf-8')
     const rows = parseCSV(text)

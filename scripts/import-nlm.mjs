@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+import { snapshotFile } from './lib/snapshot.mjs'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -62,6 +63,13 @@ async function main() {
   let inserted = 0
 
   try {
+    await snapshotFile(supabase, {
+      sourceName: 'nlm',
+      filePath: SOURCE_PATH,
+      queryUrl: NLM_SOURCE_URL,
+      extra: { import_kind: 'nlm_jmedline_v1' },
+    })
+
     console.log(`Reading ${SOURCE_PATH}…`)
     const text = readFileSync(SOURCE_PATH, 'utf-8')
     const records = parseJMedline(text)
