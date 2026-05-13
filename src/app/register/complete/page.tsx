@@ -18,10 +18,10 @@ export default function RegisterCompletePage() {
           Your account is missing required consents
         </h2>
         <p dir="rtl" className="text-sm leading-relaxed mb-4" style={{ color: '#374151' }}>
-          حسابك ينقصه موافقات إلزامية مطلوبة بموجب نظام حماية البيانات الشخصية. الرجاء التواصل مع الدعم لتحديث موافقاتك. [بريد دعم placeholder]
+          حسابك ينقصه موافقات إلزامية مطلوبة بموجب نظام حماية البيانات الشخصية. الرجاء التواصل مع الدعم لتحديث موافقاتك: privacy@verijournals.app
         </p>
         <p lang="en" className="text-sm leading-relaxed" style={{ color: '#374151' }}>
-          Your account is missing required consents under the Saudi Personal Data Protection Law. Please contact support to update your consents. [support email placeholder]
+          Your account is missing required consents under the Saudi Personal Data Protection Law. Please contact support to update your consents: privacy@verijournals.app
         </p>
       </div>
     </main>
