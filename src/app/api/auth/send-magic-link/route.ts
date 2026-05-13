@@ -19,13 +19,14 @@ export async function POST(req: NextRequest) {
 
   const admin = getAdmin()
 
-  // Gate: is this email on the allowlist?
+  // Gate: is this email on the allowlist AND not revoked?
   // If the allowed_users table does not yet exist (migration not applied
   // to this environment), fail closed — no link is sent.
   const { data: allowed, error } = await admin
     .from('allowed_users')
-    .select('email')
+    .select('email, revoked_at')
     .eq('email', email)
+    .is('revoked_at', null)
     .maybeSingle()
 
   if (error) {

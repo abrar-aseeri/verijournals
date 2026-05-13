@@ -36,10 +36,10 @@ export async function GET(request: Request) {
   try {
     const { data: allowed, error: allowErr } = await admin
       .from('allowed_users')
-      .select('email, activated_at')
+      .select('email, activated_at, revoked_at')
       .eq('email', email)
       .maybeSingle()
-    if (!allowErr && allowed === null) {
+    if (!allowErr && (allowed === null || allowed.revoked_at !== null)) {
       await supabase.auth.signOut()
       return NextResponse.redirect(`${origin}/login?error=not_invited`)
     }

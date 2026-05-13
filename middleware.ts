@@ -1,28 +1,32 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 
 // Closed-beta gate.
 //
 // Tier 1 — Public (anyone can reach without a session):
-//   /, /login, /privacy, /terms, /api/auth/*, /api/request-access,
-//   /api/cron, plus the Next.js static asset paths.
+//   /, /login, /request-access, /privacy, /terms, /api/auth/*,
+//   /api/request-access, /api/cron, /auth/callback, plus Next.js
+//   static asset paths.
 //
-// Tier 2 — Authenticated-but-not-yet-consented (gets through to the
-// consent interstitial only):
+// Tier 2 — Authenticated-but-not-yet-consented (reachable so the user
+// can complete the consent interstitial):
 //   /onboarding/consent, /api/auth/grant-initial-consents.
 //
-// Tier 3 — Authenticated + consented (everything else, including
-// /admin/* which is further gated by admin/layout.tsx).
+// Tier 3 — Authenticated + consented + Saudi-located (everything else,
+// including /admin/* which is further gated by admin/layout.tsx).
 //
-// Any unauthenticated request to a Tier 3 path → 302 redirect to /.
-// Any authenticated-without-consent request to a Tier 3 path → 302 to
-// /onboarding/consent.
+// Unauthenticated → / (no URL exposure of protected paths).
+// Revoked allowlist entry → sign out → /.
+// Authenticated but no consent → /onboarding/consent.
+// Authenticated + consent OK + outside KSA + not geo_exempt → /blocked.
 
 const PUBLIC_EXACT = new Set<string>([
   '/',
   '/login',
   '/privacy',
   '/terms',
+  '/request-access',
 ])
 
 const PUBLIC_PREFIXES = [
@@ -37,6 +41,7 @@ const PUBLIC_PREFIXES = [
 
 const POST_AUTH_ALLOWED_EXACT = new Set<string>([
   '/onboarding/consent',
+  '/blocked',
 ])
 
 const POST_AUTH_ALLOWED_PREFIXES = [
@@ -59,7 +64,7 @@ export async function middleware(req: NextRequest) {
   if (isPublic(pathname)) return NextResponse.next()
 
   const res = NextResponse.next()
-  const supabase = createServerClient(
+  const session = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -76,21 +81,64 @@ export async function middleware(req: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await session.auth.getUser()
 
   if (!user) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
-  // From here the request is authenticated. The consent interstitial
-  // routes are reachable without consent so the user can grant it.
   if (isPostAuthAllowed(pathname)) return res
 
-  // Consent check. Fail-open if the table doesn't exist yet (migration
-  // unapplied) — that way dev/prod aren't bricked before the schema is
-  // in place.
+  // Service-role client for the allowlist + geo_exempt check. The
+  // allowed_users table is service-role-only under RLS, so the user
+  // session cannot read it directly.
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+  let geoExempt = false
+  let revoked = false
+  let allowedUserMissing = false
   try {
-    const { data, error } = await supabase
+    const { data: allowed, error } = await admin
+      .from('allowed_users')
+      .select('geo_exempt, revoked_at')
+      .eq('email', user.email!.toLowerCase())
+      .maybeSingle()
+    if (error) {
+      console.warn('[middleware] allowed_users lookup skipped:', error.message)
+    } else if (allowed === null) {
+      allowedUserMissing = true
+    } else {
+      geoExempt = !!allowed.geo_exempt
+      revoked = allowed.revoked_at !== null
+    }
+  } catch (e) {
+    console.warn('[middleware] allowed_users exception:', e)
+  }
+
+  if (revoked || allowedUserMissing) {
+    // Revoked invitee or session whose allowlist entry no longer exists.
+    // (Fail-open if the table itself is missing — the error branch above
+    //  leaves both flags false.)
+    await session.auth.signOut()
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
+  // Geo check. Vercel injects `x-vercel-ip-country` on every request in
+  // its Edge network. Locally / in non-Vercel runtimes the header is
+  // absent — we fail-open in that case so dev environments work.
+  if (!geoExempt) {
+    const country = req.headers.get('x-vercel-ip-country')
+    if (country && country !== 'SA') {
+      return NextResponse.redirect(new URL('/blocked', req.url))
+    }
+  }
+
+  // Consent check (user-session client — RLS allows users to read their
+  // own consent_records).
+  try {
+    const { data, error } = await session
       .from('consent_records')
       .select('consent_type')
       .eq('user_id', user.id)
