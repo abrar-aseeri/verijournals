@@ -1,86 +1,27 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { createSupabaseBrowser } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
-
-type Mode = 'signin' | 'signup'
+import { useState } from 'react'
+import Link from 'next/link'
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [info, setInfo] = useState('')
-  const [redirectTo, setRedirectTo] = useState<string | null>(null)
-  const router = useRouter()
-  const supabase = createSupabaseBrowser()
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
-  useEffect(() => {
-    const sp = new URLSearchParams(window.location.search)
-    setRedirectTo(sp.get('redirectTo'))
-  }, [])
-
-  async function handleSignIn() {
-    setLoading(true); setError(''); setInfo('')
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    if (signInError) { setError(signInError.message); setLoading(false); return }
-
-    const userId = data.user?.id
-    if (!userId) { setError('Sign-in did not return a user.'); setLoading(false); return }
-
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('auth_id', userId)
-      .maybeSingle()
-
-    if (!profile) {
-      await supabase.auth.signOut()
-      setError('Account not provisioned. Contact admin.')
-      setLoading(false)
-      return
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await fetch('/api/auth/send-magic-link', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+    } catch {
+      // Swallow errors to keep the response neutral (no enumeration).
     }
-
-    if (profile.role === 'admin') router.push(redirectTo || '/admin')
-    else router.push('/')
+    setSubmitted(true)
+    setSubmitting(false)
   }
-
-  async function handleSignUp() {
-    if (password !== confirmPassword) { setError('Passwords do not match.'); return }
-    setLoading(true); setError(''); setInfo('')
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (signUpError) { setError(signUpError.message); setLoading(false); return }
-    if (data.session) { router.push('/'); return }
-    setInfo('Check your email to confirm your account.')
-    setLoading(false)
-  }
-
-  function submit() {
-    if (mode === 'signin') handleSignIn()
-    else handleSignUp()
-  }
-
-  function toggleMode() {
-    setMode(mode === 'signin' ? 'signup' : 'signin')
-    setError(''); setInfo(''); setConfirmPassword('')
-  }
-
-  const heading = mode === 'signin' ? 'Welcome back' : 'Create account'
-  const subhead = mode === 'signin'
-    ? 'Sign in to your VeriJournals account'
-    : 'Quick signup with email and password'
-  const btnLabel = loading
-    ? (mode === 'signin' ? 'Signing in...' : 'Creating account...')
-    : (mode === 'signin' ? 'Sign in' : 'Sign up')
-  const toggleLabel = mode === 'signin'
-    ? "Don't have an account? Sign up"
-    : 'Already have an account? Sign in'
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 font-fs" style={{ background: '#F8FAFC' }}>
@@ -92,72 +33,64 @@ export default function LoginPage() {
             alt="VeriJournals"
             style={{ height: 50, width: 'auto' }}
           />
-          <div className="font-bold text-lg" style={{ color: '#0B4644' }}>Veri<span style={{ color: '#05A854' }}>Journals</span></div>
+          <div className="font-bold text-lg" style={{ color: '#0B4644' }}>
+            Veri<span style={{ color: '#05A854' }}>Journals</span>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h1 className="text-lg font-bold text-gray-900 mb-1">{heading}</h1>
-          <p className="text-sm text-gray-500 mb-6">{subhead}</p>
+          <h1 dir="rtl" className="text-lg font-bold mb-1" style={{ color: '#0B4644' }}>
+            تسجيل الدخول
+          </h1>
+          <h2 lang="en" className="text-sm font-semibold mb-5" style={{ color: '#6B7280' }}>
+            Sign in
+          </h2>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600 mb-4">{error}</div>
-          )}
-          {info && (
-            <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm text-green-700 mb-4">{info}</div>
-          )}
-
-          <div className="flex flex-col gap-3">
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-green-400"
-              />
+          {submitted ? (
+            <div className="rounded-lg border px-3 py-3 text-sm" style={{ borderColor: '#86EFAC', background: '#DCFCE7', color: '#0B4644' }}>
+              <p dir="rtl" className="font-fs mb-2 leading-relaxed">
+                إذا كان بريدك الإلكتروني مُسجَّلاً، ستصلك رسالة تحتوي رابط الدخول. وإلا، يُرجى طلب الوصول من الصفحة الرئيسية.
+              </p>
+              <p lang="en" className="text-xs leading-relaxed">
+                If your email is registered, you will receive a sign-in link. Otherwise, please request access from the landing page.
+              </p>
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => mode === 'signin' && e.key === 'Enter' && submit()}
-                placeholder="••••••••"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-green-400"
-              />
-            </div>
-            {mode === 'signup' && (
+          ) : (
+            <form onSubmit={submit} className="flex flex-col gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Confirm Password</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">
+                  Email · البريد الإلكتروني
+                </label>
                 <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && submit()}
-                  placeholder="••••••••"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="your@email.com"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-green-400"
                 />
               </div>
-            )}
-            <button
-              onClick={submit}
-              disabled={loading}
-              className="w-full py-2.5 rounded-lg text-sm font-semibold text-white mt-1"
-              style={{ background: loading ? '#9CA3AF' : '#05A854' }}
-            >
-              {btnLabel}
-            </button>
-          </div>
+              <button
+                type="submit"
+                disabled={submitting || !email}
+                className="w-full py-2.5 rounded-lg text-sm font-semibold text-white mt-1"
+                style={{ background: submitting || !email ? '#9CA3AF' : '#05A854' }}
+              >
+                {submitting ? 'Sending…' : 'إرسال رابط الدخول · Send sign-in link'}
+              </button>
+              <p className="text-xs leading-relaxed mt-2" style={{ color: '#6B7280' }}>
+                <span dir="rtl" className="font-fs">سترسل لك رسالة تحتوي رابطاً للدخول لمرة واحدة، صالحاً لمدة ساعة.</span>
+                <br />
+                <span lang="en">A one-time sign-in link will be sent to your email, valid for 1 hour.</span>
+              </p>
+            </form>
+          )}
+        </div>
 
-          <button
-            type="button"
-            onClick={toggleMode}
-            className="block w-full text-center text-xs text-gray-500 mt-4 hover:text-gray-700"
-          >
-            {toggleLabel}
-          </button>
+        <div className="text-center mt-6 text-xs" style={{ color: '#6B7280' }}>
+          <Link href="/" className="hover:underline">
+            ← العودة إلى الصفحة الرئيسية · Back to home
+          </Link>
         </div>
       </div>
     </div>
