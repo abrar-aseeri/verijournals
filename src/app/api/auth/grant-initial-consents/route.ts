@@ -56,12 +56,22 @@ export async function POST(req: NextRequest) {
   }))
 
   const admin = getAdmin()
-  const { error } = await admin.from('consent_records').insert(rows)
-  if (error) {
-    console.error('[record-consent] insert failed:', error.message)
+  const { data, error } = await admin
+    .from('consent_records')
+    .insert(rows)
+    .select()
+
+  if (error || !data || data.length !== rows.length) {
+    console.error('[grant-initial-consents] insert failure', {
+      error,
+      inserted: data?.length ?? 0,
+      expected: rows.length,
+      user_id: user.id,
+    })
     return NextResponse.json(
       {
         error: 'insert_failed',
+        message_ar: 'تعذّر تسجيل الموافقات. حاول مرة أخرى.',
         message_en: 'Could not record consents. Please try again.',
       },
       { status: 500 },
