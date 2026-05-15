@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdmin } from '@/lib/supabase'
+import { sendAccessRequestNotification } from '@/lib/resend'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,8 +97,6 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('[request-access] insert failed:', error.message)
-    // Placeholder admin notification — Resend not yet configured.
-    console.log('[request-access] new request received from', email)
     return NextResponse.json(
       {
         error: 'submit_failed',
@@ -109,5 +108,21 @@ export async function POST(req: NextRequest) {
   }
 
   console.log('[request-access] new request stored for', email)
+
+  try {
+    await sendAccessRequestNotification({
+      full_name,
+      email,
+      institution,
+      specialty,
+      reason,
+      ip_address: ip,
+      requested_at: new Date().toISOString(),
+    })
+    console.log('[request-access] notification sent to admin')
+  } catch (e) {
+    console.error('[request-access] notification failed', e)
+  }
+
   return NextResponse.json({ ok: true })
 }
