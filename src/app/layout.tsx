@@ -18,17 +18,27 @@ export default function RootLayout({
         style={{ background: '#F5F5F5', color: '#1A1A1A' }}
       >
         <div
-          dir="rtl"
-          className="w-full text-center py-1.5 px-4"
+          className="w-full py-2 px-4 text-center"
           style={{
             background: '#FFFBE6',
             color: '#555555',
-            fontWeight: 500,
-            fontSize: '13px',
+            fontSize: '12px',
+            lineHeight: '1.5',
             borderBottom: '1px solid #E5E5E5',
           }}
         >
-          هذا الموقع قيد التجربة، وقد تحتوي البيانات على أخطاء أو نقص أو تأخير في التحديث، ولا يُعتمد عليها لاتخاذ قرارات، وباستخدامك للموقع فإنك توافق على ذلك.
+          <p dir="rtl" className="font-fs">
+            <span className="font-semibold">تنويه:</span> VeriJournals مشروع شخصي مستقل لأغراض استرشادية أكاديمية، غير مرتبط بأي جهة حكومية. المؤشرات منقولة من مصادرها المُعلَنة كما هي وقد تحتوي على أخطاء أو تأخير. المخرجات لا تُعتبر حكماً قطعياً ولا تُغني عن المراجعة المستقلة. للاعتراض على تصنيف:{' '}
+            <a href="/report-discrepancy" className="underline" style={{ color: '#0B4644' }}>/report-discrepancy</a>
+            . باستخدامك للمنصة توافق على{' '}
+            <a href="/terms" className="underline" style={{ color: '#0B4644' }}>الشروط</a>.
+          </p>
+          <p lang="en" className="mt-1" style={{ color: '#666' }}>
+            VeriJournals is an independent personal project for advisory academic purposes, not affiliated with any government entity. Indicators are passed through from their declared sources as-is and may contain errors or delays. Outputs are not definitive judgments and do not replace independent review. Disputes:{' '}
+            <a href="/report-discrepancy" className="underline" style={{ color: '#0B4644' }}>/report-discrepancy</a>
+            . Use constitutes acceptance of the{' '}
+            <a href="/terms" className="underline" style={{ color: '#0B4644' }}>Terms</a>.
+          </p>
         </div>
         <div className="min-h-screen flex flex-col">
           {children}

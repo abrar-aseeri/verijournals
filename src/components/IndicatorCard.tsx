@@ -28,12 +28,8 @@ const confidenceStyles: Record<Confidence, { ar: string; en: string; dot: string
 
 export default function IndicatorCard({
   value, label, source, license, snapshotAt, sourceUrl, confidence,
-  journalId, indicatorKey,
 }: IndicatorCardProps) {
   const c = confidenceStyles[confidence];
-  const reportHref = journalId && indicatorKey
-    ? `/report-discrepancy?journal=${encodeURIComponent(journalId)}&indicator=${encodeURIComponent(indicatorKey)}`
-    : null;
 
   return (
     <div
@@ -50,6 +46,34 @@ export default function IndicatorCard({
 
       <div className="mt-2 font-fs text-2xl font-semibold text-[#0B4644]">
         {value}
+      </div>
+
+      <div className="mt-2 text-[10px] leading-relaxed text-[#0B4644]/60">
+        <p dir="rtl" className="font-fs">
+          <span aria-hidden>ⓘ</span> تقدير خوارزمي مبني على بيانات مُعلَنة. ليس حكماً قطعياً.
+        </p>
+        <p lang="en">
+          <span aria-hidden>ⓘ</span> Algorithmic estimate based on declared data. Not a definitive judgment.
+        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-1.5">
+          <Link
+            href="/methodology"
+            className="underline decoration-dotted hover:text-[#05A854]"
+          >
+            <span dir="rtl" className="font-fs">كيف يُحسَب؟</span>
+            <span className="mx-0.5">/</span>
+            <span lang="en">How is this calculated?</span>
+          </Link>
+          <span className="opacity-50">|</span>
+          <Link
+            href="/report-discrepancy"
+            className="underline decoration-dotted hover:text-[#F59E0B]"
+          >
+            <span dir="rtl" className="font-fs">أبلغ عن تباين</span>
+            <span className="mx-0.5">/</span>
+            <span lang="en">Report discrepancy</span>
+          </Link>
+        </div>
       </div>
 
       <dl className="mt-3 space-y-1 text-xs text-[#0B4644]/70">
@@ -82,23 +106,6 @@ export default function IndicatorCard({
         </div>
       </dl>
 
-      <div className="mt-3 flex items-center justify-between text-xs">
-        <Link
-          href="/methodology#sources"
-          className="text-[#0B4644]/60 hover:text-[#05A854] underline decoration-dotted"
-        >
-          المنهجية / Methodology
-        </Link>
-        {reportHref && (
-          <Link
-            href={reportHref}
-            className="text-[#0B4644]/60 hover:text-[#F59E0B] underline decoration-dotted"
-            lang="en"
-          >
-            تنبيه عن تباين / Data correction
-          </Link>
-        )}
-      </div>
     </div>
   );
 }
