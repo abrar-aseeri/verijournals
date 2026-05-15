@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 
-// Closed-beta gate.
+// Closed-beta gate. Next.js 16 renamed `middleware.ts` to `proxy.ts`;
+// this file is the canonical edge proxy for the platform.
 //
 // Tier 1 — Public (anyone can reach without a session):
 //   /, /login, /request-access, /privacy, /terms, /api/auth/*,
@@ -14,12 +15,14 @@ import { createServerClient } from '@supabase/ssr'
 //   /onboarding/consent, /api/auth/grant-initial-consents.
 //
 // Tier 3 — Authenticated + consented + Saudi-located (everything else,
-// including /admin/* which is further gated by admin/layout.tsx).
+// including /admin/* which is further gated by an admin role check at
+// the bottom of this function and by src/app/admin/layout.tsx).
 //
 // Unauthenticated → / (no URL exposure of protected paths).
 // Revoked allowlist entry → sign out → /.
 // Authenticated but no consent → /onboarding/consent.
 // Authenticated + consent OK + outside KSA + not geo_exempt → /blocked.
+// Authenticated + consent OK + on /admin/* but role !== 'admin' → /.
 
 const PUBLIC_EXACT = new Set<string>([
   '/',
@@ -58,21 +61,21 @@ function isPostAuthAllowed(pathname: string): boolean {
   return POST_AUTH_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
 }
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
 
-  if (isPublic(pathname)) return NextResponse.next()
+  if (isPublic(pathname)) return NextResponse.next({ request })
 
-  const res = NextResponse.next()
+  const response = NextResponse.next({ request })
   const session = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => req.cookies.getAll(),
+        getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
-            res.cookies.set(name, value, options)
+            response.cookies.set(name, value, options)
           })
         },
       },
@@ -84,10 +87,13 @@ export async function middleware(req: NextRequest) {
   } = await session.auth.getUser()
 
   if (!user) {
-    return NextResponse.redirect(new URL('/', req.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    url.search = ''
+    return NextResponse.redirect(url)
   }
 
-  if (isPostAuthAllowed(pathname)) return res
+  if (isPostAuthAllowed(pathname)) return response
 
   // Service-role client for the allowlist + geo_exempt check. The
   // allowed_users table is service-role-only under RLS, so the user
@@ -106,7 +112,7 @@ export async function middleware(req: NextRequest) {
       .eq('email', user.email!.toLowerCase())
       .maybeSingle()
     if (error) {
-      console.warn('[middleware] allowed_users lookup skipped:', error.message)
+      console.warn('[proxy] allowed_users lookup skipped:', error.message)
     } else if (allowed === null) {
       allowedUserMissing = true
     } else {
@@ -114,24 +120,27 @@ export async function middleware(req: NextRequest) {
       revoked = allowed.revoked_at !== null
     }
   } catch (e) {
-    console.warn('[middleware] allowed_users exception:', e)
+    console.warn('[proxy] allowed_users exception:', e)
   }
 
   if (revoked || allowedUserMissing) {
-    // Revoked invitee or session whose allowlist entry no longer exists.
-    // (Fail-open if the table itself is missing — the error branch above
-    //  leaves both flags false.)
     await session.auth.signOut()
-    return NextResponse.redirect(new URL('/', req.url))
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    url.search = ''
+    return NextResponse.redirect(url)
   }
 
   // Geo check. Vercel injects `x-vercel-ip-country` on every request in
   // its Edge network. Locally / in non-Vercel runtimes the header is
   // absent — we fail-open in that case so dev environments work.
   if (!geoExempt) {
-    const country = req.headers.get('x-vercel-ip-country')
+    const country = request.headers.get('x-vercel-ip-country')
     if (country && country !== 'SA') {
-      return NextResponse.redirect(new URL('/blocked', req.url))
+      const url = request.nextUrl.clone()
+      url.pathname = '/blocked'
+      url.search = ''
+      return NextResponse.redirect(url)
     }
   }
 
@@ -147,28 +156,45 @@ export async function middleware(req: NextRequest) {
       .in('consent_type', ['terms_and_privacy', 'pdpl_acknowledgment'])
 
     if (error) {
-      console.warn('[middleware] consent check skipped:', error.message)
-      return res
-    }
-
-    const granted = new Set((data ?? []).map((r) => r.consent_type))
-    if (
-      !granted.has('terms_and_privacy') ||
-      !granted.has('pdpl_acknowledgment')
-    ) {
-      const nextParam = pathname && pathname !== '/'
-        ? `?next=${encodeURIComponent(pathname)}`
-        : ''
-      return NextResponse.redirect(
-        new URL(`/onboarding/consent${nextParam}`, req.url),
-      )
+      console.warn('[proxy] consent check skipped:', error.message)
+    } else {
+      const granted = new Set((data ?? []).map((r) => r.consent_type))
+      if (
+        !granted.has('terms_and_privacy') ||
+        !granted.has('pdpl_acknowledgment')
+      ) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/onboarding/consent'
+        url.search = pathname && pathname !== '/'
+          ? `?next=${encodeURIComponent(pathname)}`
+          : ''
+        return NextResponse.redirect(url)
+      }
     }
   } catch (e) {
-    console.warn('[middleware] consent check exception:', e)
-    return res
+    console.warn('[proxy] consent check exception:', e)
   }
 
-  return res
+  // Admin role check (preserved from the original proxy.ts). Layered on
+  // top of src/app/admin/layout.tsx — both layers redirect non-admins
+  // to /, so they reinforce each other. The layout adds a per-page
+  // server-component check; this proxy stop catches the request earlier
+  // and avoids any admin page render starting for non-admins.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    const { data: profile } = await session
+      .from('users')
+      .select('role')
+      .eq('auth_id', user.id)
+      .maybeSingle()
+    if (profile?.role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
+  }
+
+  return response
 }
 
 export const config = {
