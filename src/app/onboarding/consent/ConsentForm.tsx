@@ -76,9 +76,10 @@ export default function ConsentForm({ next }: { next: string }) {
           onToggle={() => toggle('terms_and_privacy')}
           barColor="#DC2626"
           badge={{ ar: 'إلزامي', en: 'Required', color: '#DC2626' }}
-          ar={
+          ar="أوافق على شروط الاستخدام و إشعار الخصوصية."
+          en="I agree to the Terms of Service and Privacy Notice."
+          linksBelow={
             <>
-              أوافق على{' '}
               <Link
                 href="/terms"
                 target="_blank"
@@ -86,9 +87,11 @@ export default function ConsentForm({ next }: { next: string }) {
                 className="underline"
                 style={{ color: '#0B4644' }}
               >
-                شروط الاستخدام
+                <span dir="rtl" className="font-fs">اطلع على الشروط</span>
+                <span className="mx-0.5">/</span>
+                <span lang="en">Read Terms</span>
               </Link>
-              {' '}و{' '}
+              <span className="mx-1.5 opacity-40">·</span>
               <Link
                 href="/privacy"
                 target="_blank"
@@ -96,31 +99,9 @@ export default function ConsentForm({ next }: { next: string }) {
                 className="underline"
                 style={{ color: '#0B4644' }}
               >
-                إشعار الخصوصية
-              </Link>
-            </>
-          }
-          en={
-            <>
-              I agree to the{' '}
-              <Link
-                href="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-                style={{ color: '#0B4644' }}
-              >
-                Terms of Service
-              </Link>
-              {' '}and{' '}
-              <Link
-                href="/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline"
-                style={{ color: '#0B4644' }}
-              >
-                Privacy Notice
+                <span dir="rtl" className="font-fs">اطلع على إشعار الخصوصية</span>
+                <span className="mx-0.5">/</span>
+                <span lang="en">Read Privacy</span>
               </Link>
             </>
           }
@@ -205,7 +186,7 @@ function ConsentSection({
 }
 
 function ConsentRow({
-  checked, onToggle, ar, en, barColor, badge,
+  checked, onToggle, ar, en, barColor, badge, linksBelow,
 }: {
   checked: boolean
   onToggle: () => void
@@ -213,25 +194,38 @@ function ConsentRow({
   en: React.ReactNode
   barColor: string
   badge: { ar: string; en: string; color: string }
+  linksBelow?: React.ReactNode
 }) {
   return (
-    <label
-      className="flex items-start gap-2 p-2 pr-3 rounded-lg cursor-pointer border-l-4 bg-white hover:bg-gray-50"
+    <div
+      className="rounded-lg bg-white border-l-4"
       style={{ borderLeftColor: barColor }}
     >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        className="mt-1 flex-shrink-0"
-      />
-      <div className="flex-1 min-w-0">
-        <div dir="rtl" className="text-xs leading-relaxed font-fs" style={{ color: '#0B4644' }}>{ar}</div>
-        <div lang="en" className="text-xs leading-relaxed mt-1" style={{ color: '#374151' }}>{en}</div>
-        <div className="text-[10px] mt-1 font-medium" style={{ color: badge.color }}>
-          (<span dir="rtl" className="font-fs">{badge.ar}</span> / {badge.en})
+      {/* Label wraps ONLY the checkbox + descriptive copy. Any clickable
+          children (e.g. /terms or /privacy links) must be rendered via
+          `linksBelow` so a click on the link cannot bubble up and toggle
+          the checkbox — that ambiguity created an erroneous-consent
+          incident on 2026-05-15 and is a PDPL compliance concern. */}
+      <label className="flex items-start gap-2 p-2 pr-3 rounded-lg cursor-pointer hover:bg-gray-50">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          className="mt-1 flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <div dir="rtl" className="text-xs leading-relaxed font-fs" style={{ color: '#0B4644' }}>{ar}</div>
+          <div lang="en" className="text-xs leading-relaxed mt-1" style={{ color: '#374151' }}>{en}</div>
+          <div className="text-[10px] mt-1 font-medium" style={{ color: badge.color }}>
+            (<span dir="rtl" className="font-fs">{badge.ar}</span> / {badge.en})
+          </div>
         </div>
-      </div>
-    </label>
+      </label>
+      {linksBelow && (
+        <div className="px-3 pb-2 text-[10px]" style={{ color: '#6B7280' }}>
+          {linksBelow}
+        </div>
+      )}
+    </div>
   )
 }
