@@ -3,5 +3,5 @@
 // agreed to at sign-up; the page may evolve but their consent is bound
 // to the version at that moment.
 
-export const PRIVACY_NOTICE_VERSION = 'v0.1-draft'
-export const PRIVACY_NOTICE_EFFECTIVE_DATE = '2026-05-13'
+export const PRIVACY_NOTICE_VERSION = 'v1.0'
+export const PRIVACY_NOTICE_EFFECTIVE_DATE = '2026-05-15'
