@@ -101,6 +101,20 @@ function ArabicContent() {
       <h2>٣. مصادر البيانات الأحد عشر</h2>
       <p>كل مؤشر يأتي من مصدر معلن، مع رابط للمصدر الأصلي وتاريخ Snapshot في صفحة كل مجلة.</p>
 
+      <div className="not-prose my-6 rounded-lg border border-blue-300 bg-blue-50 p-4">
+        <p className="font-semibold text-blue-900 mb-2">ℹ️ حالة المصادر في الإصدار الحالي</p>
+        <p className="text-sm text-blue-900 mb-2">
+          المنصة في مرحلة Closed Beta. من بين الـ 11 مصدراً الموثَّقة أدناه:
+        </p>
+        <ul className="text-sm text-blue-900 mb-2 list-none pr-0 space-y-1">
+          <li>✅ <strong>مفعَّلة آلياً (4):</strong> PubMed, DOAJ, Scimago, Retraction Watch.</li>
+          <li>⏳ <strong>قيد التطوير (7):</strong> Web of Science, Scopus, Crossref, Editorial Board, Hijacked Journal Checker, DOAJ Removed, Arab Impact Factor.</li>
+        </ul>
+        <p className="text-sm text-blue-900">
+          سيتم تفعيل المصادر تباعاً مع إعلان كل تفعيل في سجل الإصدارات (القسم ١٤).
+        </p>
+      </div>
+
       <h3>مصادر تعزز الثقة (Trust-positive)</h3>
       <ol>
         <li><strong>NLM / PubMed</strong> — قاعدة المكتبة الوطنية الأمريكية للطب. الفهرسة تعني اجتياز معايير NLM.</li>
@@ -349,6 +363,20 @@ function EnglishContent() {
 
       <h2>3. The Eleven Data Sources</h2>
       <p>Each indicator comes from a declared source, with a link to the original and a snapshot date on each journal page.</p>
+
+      <div className="not-prose my-6 rounded-lg border border-blue-300 bg-blue-50 p-4">
+        <p className="font-semibold text-blue-900 mb-2">ℹ️ Source Activation Status</p>
+        <p className="text-sm text-blue-900 mb-2">
+          The platform is in Closed Beta. Of the 11 documented sources below:
+        </p>
+        <ul className="text-sm text-blue-900 mb-2 list-none pl-0 space-y-1">
+          <li>✅ <strong>Actively computed (4):</strong> PubMed, DOAJ, Scimago, Retraction Watch.</li>
+          <li>⏳ <strong>Under development (7):</strong> Web of Science, Scopus, Crossref, Editorial Board, Hijacked Journal Checker, DOAJ Removed, Arab Impact Factor.</li>
+        </ul>
+        <p className="text-sm text-blue-900">
+          Sources will be progressively activated, with each activation announced in the Version Log (Section 14).
+        </p>
+      </div>
 
       <h3>Trust-positive sources</h3>
       <ol>
