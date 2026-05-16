@@ -1,604 +1,550 @@
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
-import { getAdmin } from '@/lib/supabase'
+// app/methodology/page.tsx  (Next.js App Router)
+// VeriJournals Methodology — bilingual AR/EN
+// Legal purpose: primary defense against
+//   - Saudi Anti-Cyber Crime Law Art. 3 (defamation)
+//   - UK Defamation Act 2013 s.3 (Honest Opinion)
+//   - SDAIA AI Ethics: Transparency + Accountability
+//   - PDPL Art. 22 (Automated Decisions): right to explanation
 
-export const dynamic = 'force-dynamic'
+'use client';
 
-export const metadata = {
-  title: 'المنهجية | Methodology — VeriJournals',
-  description: 'How VeriJournals scores journals: data sources, weights, thresholds, and limitations.',
-}
+import { useState } from 'react';
 
-const dataSources = [
-  {
-    nameAr: 'SCImago Journal Rank',
-    nameEn: 'SCImago Journal Rank (SJR)',
-    whatAr: 'مؤشر ترتيب المجلات على أساس وزن الاستشهادات. مفهرسة في Scopus.',
-    whatEn: 'Citation-weighted ranking of journals indexed in Scopus.',
-    matches: '61,486',
-    refresh: '2023 snapshot',
-    role: 'trust',
-    weight: '+10',
-  },
-  {
-    nameAr: 'NLM / PubMed',
-    nameEn: 'NLM / PubMed Catalog',
-    whatAr: 'قائمة المكتبة الوطنية الأمريكية للطب — مرجع المجلات الطبية المعتمد.',
-    whatEn: 'US National Library of Medicine biomedical-journal catalogue.',
-    matches: '14,507',
-    refresh: '2026-05-11',
-    role: 'trust',
-    weight: '+20',
-  },
-  {
-    nameAr: 'DOAJ',
-    nameEn: 'Directory of Open Access Journals',
-    whatAr: 'دليل المجلات المفتوحة المراجعة من قبل النظراء، مع التحقق من الشفافية.',
-    whatEn: 'Curated list of peer-reviewed open-access journals.',
-    matches: '8,645',
-    refresh: '2026-05-10',
-    role: 'trust',
-    weight: '+20',
-  },
-  {
-    nameAr: 'Retraction Watch',
-    nameEn: 'Retraction Watch (via Crossref)',
-    whatAr: 'قاعدة بيانات سحب الأوراق العلمية. تُحسب نسبة السحب لكل مجلة.',
-    whatEn: 'Database of retraction notices. We compute per-journal retraction rate.',
-    matches: '1,840',
-    refresh: '2026-05-11 (window 2021–2023)',
-    role: 'risk',
-    weight: '+10',
-  },
-]
+const CONTACT_EMAIL = 'abrar.aseeri@gmail.com';
+const VERSION = '1.0';
+const LAST_UPDATED_AR = '١٥ مايو ٢٠٢٦';
+const LAST_UPDATED_EN = 'May 15, 2026';
 
-const trustSignals = [
-  { signal: 'DOAJ Open Access', weight: '+20', url: 'https://doaj.org' },
-  { signal: 'NLM / PubMed', weight: '+20', url: 'https://www.ncbi.nlm.nih.gov/nlmcatalog' },
-  { signal: 'SCImago indexing', weight: '+10', url: 'https://www.scimagojr.com' },
-]
+type Lang = 'ar' | 'en';
 
-type RiskSignal = {
-  signal: string
-  weight: string
-  trigger: string
-  active: boolean
-  statusAr?: string
-  statusEn?: string
-}
-
-const riskSignals: RiskSignal[] = [
-  {
-    signal: 'Retraction Watch',
-    weight: '+10',
-    trigger: 'retraction rate ≥ 1.0% (window 2021–2023)',
-    active: true,
-  },
-  {
-    signal: "Beall's List entry",
-    weight: '+25',
-    trigger: "presence in Beall's archived predatory list",
-    active: false,
-    statusAr: 'لم تُدمج بعد (في انتظار مصدر بيانات)',
-    statusEn: 'not yet integrated (pending data source)',
-  },
-  {
-    signal: 'Hijacked Journal',
-    weight: '+30',
-    trigger: 'presence in Retraction Watch Hijacked Journal Checker',
-    active: false,
-    statusAr: 'لم تُدمج بعد (في انتظار مصدر بيانات)',
-    statusEn: 'not yet integrated (pending data source)',
-  },
-]
-
-const thresholds = [
-  { status: 'Multiple Positive Indicators', rule: 'trust ≥ 50 AND risk < 30' },
-  { status: 'Caution Signals Present', rule: 'risk ≥ 40' },
-  { status: 'Verification Recommended', rule: 'trust ≥ 30' },
-  { status: 'Limited Indexing Coverage', rule: 'default' },
-]
-
-const distributionLabels = {
-  trusted: 'مؤشرات إيجابية متعددة',
-  review_needed: 'يُنصح بالتحقق',
-  under_evaluation: 'بيانات فهرسة محدودة',
-  high_risk: 'تتطلب تحققاً دقيقاً',
-} as const
-
-const distributionLabelsEnFactual: Record<keyof typeof distributionLabels, string> = {
-  trusted: 'Multiple Positive Indicators',
-  review_needed: 'Verification Recommended',
-  under_evaluation: 'Limited Indexing Coverage',
-  high_risk: 'Requires Careful Verification',
-}
-
-type DistributionRow = {
-  labelAr: string
-  labelEnFactual: string
-  statusKey: keyof typeof distributionLabels
-  count: string
-  pct: string
-}
-
-const limitations = [
-  {
-    ar: 'غياب Scopus و WoS: التقييم الحالي يعتمد على مصادر مفتوحة فقط. لا تصل أي مجلة إلى تصنيف "مؤشرات إيجابية متعددة" بدون توفّر DOAJ + NLM + SCImago مجتمعة.',
-    en: 'Scopus and Web of Science are not integrated. The current signal set is open-source only; no journal reaches "Multiple Positive Indicators" status without DOAJ + NLM + SCImago in combination.',
-  },
-  {
-    ar: 'نافذة Retraction Watch: 2021–2023 فقط، حتى تطابق نافذة SCImago SJR في حساب نسبة السحب.',
-    en: 'Retraction Watch window is 2021–2023, matched to the SCImago SJR snapshot so the retraction rate has a comparable denominator.',
-  },
-  {
-    ar: 'دقة Crossref في استخراج ISSN: حوالي 87.5% للسجلات الحديثة، وأقل للسجلات الأقدم.',
-    en: 'Crossref ISSN-resolution rate is ~87.5% on recent records and lower on older ones, so a fraction of retractions cannot be linked back to a journal.',
-  },
-  {
-    ar: 'المجلات التي ليس لها total_docs لا يمكن حساب نسبة سحب لها — تُستثنى من إشارة Retraction Watch.',
-    en: 'Journals without total_docs cannot have a retraction rate computed and are excluded from the Retraction Watch signal.',
-  },
-  {
-    ar: 'هذه المنهجية في مرحلة التطوير التشاوري. تصلح كأداة استرشادية أوّلية لمساعدة الباحثين على فحص خيارات النشر، ولا تُغني عن المراجعة المستقلة والتقييم الأكاديمي المتخصص. القرار النهائي للنشر يبقى مسؤولية الباحث ومرجعه الأكاديمي.',
-    en: 'This methodology is under iterative development. It serves as a preliminary advisory tool to assist researchers in evaluating publication venues, and does not substitute for independent expert review or specialized academic assessment. The final publication decision remains the responsibility of the researcher and their academic advisor.',
-  },
-]
-
-const references = [
-  { name: 'DOAJ — About', url: 'https://doaj.org/about' },
-  { name: 'NLM J_Medline catalogue', url: 'https://ftp.ncbi.nlm.nih.gov/pubmed/J_Medline.txt' },
-  { name: 'Retraction Watch (via Crossref)', url: 'https://gitlab.com/crossref/retraction-watch-data' },
-  { name: 'SCImago Journal Rank — Help', url: 'https://www.scimagojr.com/help.php' },
-  { name: 'Crossref REST API', url: 'https://api.crossref.org' },
-]
-
-const changelog = [
-  { date: '2026-04-XX (v1.0 adoption)', ar: 'اعتماد الإصدار الأول للمنهجية. حدّدت الأوزان والعتبات الحالية.', en: 'Adoption of v1.0 baseline.' },
-  { date: '2026-05-11', ar: 'إعادة حساب الدرجات من journal_indexing لأول مرة لـ 61,486 مجلة.', en: 'First full recompute of trust/risk scores from journal_indexing (61,486 journals).' },
-  { date: '2026-05-11', ar: 'تخفيض عتبة "مؤشرات إيجابية متعددة" من 60 إلى 50 لتتناسب مع المصادر المفتوحة المتاحة.', en: '"Multiple Positive Indicators" threshold lowered from 60 → 50 to match the open-source signal ceiling.', commit: '4b87ffc' },
-  { date: '2026-05-11', ar: 'استيراد Retraction Watch مع نافذة 2021–2023.', en: 'Retraction Watch windowed import (2021–2023).', commit: 'a20ff89' },
-  { date: '2026-05-11', ar: 'استيراد فهرس NLM/PubMed.', en: 'NLM/PubMed catalogue imported.', commit: '2ca0da4' },
-  { date: '2026-05-10', ar: 'استيراد قاعدة DOAJ.', en: 'DOAJ imported as the first open-access signal.', commit: '11bf8e1' },
-]
-
-function SectionHeading({ ar, en }: { ar: string; en: string }) {
-  return (
-    <div className="mb-6">
-      <h2 dir="rtl" className="font-fs text-2xl font-bold mb-1" style={{ color: '#0B4644' }}>{ar}</h2>
-      <div className="text-sm" style={{ color: '#6B7280' }}>{en}</div>
-    </div>
-  )
-}
-
-export default async function MethodologyPage() {
-  const supabase = getAdmin()
-  const statuses = ['trusted', 'review_needed', 'under_evaluation', 'high_risk'] as const
-  const [trusted, review, under, high, lastRun] = await Promise.all([
-    supabase.from('journals').select('id', { count: 'exact', head: true }).eq('trust_status', 'trusted'),
-    supabase.from('journals').select('id', { count: 'exact', head: true }).eq('trust_status', 'review_needed'),
-    supabase.from('journals').select('id', { count: 'exact', head: true }).eq('trust_status', 'under_evaluation'),
-    supabase.from('journals').select('id', { count: 'exact', head: true }).eq('trust_status', 'high_risk'),
-    supabase.from('automation_runs').select('completed_at')
-      .eq('run_type', 'recompute_scores').eq('status', 'success')
-      .order('completed_at', { ascending: false }).limit(1).maybeSingle(),
-  ])
-
-  const counts: Record<typeof statuses[number], number> = {
-    trusted: trusted.count ?? 0,
-    review_needed: review.count ?? 0,
-    under_evaluation: under.count ?? 0,
-    high_risk: high.count ?? 0,
-  }
-  const total = counts.trusted + counts.review_needed + counts.under_evaluation + counts.high_risk
-  const pct = (n: number) => total > 0 ? `${((n / total) * 100).toFixed(1)}%` : '0.0%'
-  const distribution: DistributionRow[] = statuses.map((s) => ({
-    labelAr: distributionLabels[s],
-    labelEnFactual: distributionLabelsEnFactual[s],
-    statusKey: s,
-    count: counts[s].toLocaleString(),
-    pct: pct(counts[s]),
-  }))
-  const lastRefreshDate = lastRun.data?.completed_at
-    ? new Date(lastRun.data.completed_at).toISOString().slice(0, 10)
-    : 'unknown'
+export default function MethodologyPage() {
+  const [lang, setLang] = useState<Lang>('ar');
+  const isAr = lang === 'ar';
 
   return (
-    <>
-      <Navbar />
-      <main style={{ background: '#F8FAFC' }} className="font-fs">
+    <main
+      dir={isAr ? 'rtl' : 'ltr'}
+      lang={isAr ? 'ar' : 'en'}
+      className="mx-auto max-w-3xl px-5 py-10 leading-relaxed text-slate-800"
+      style={{ fontFamily: isAr ? "'Cairo','Noto Sans Arabic','Segoe UI',sans-serif" : "'DM Sans','Segoe UI',sans-serif" }}
+    >
+      <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        {isAr
+          ? '⚠️ مشروع شخصي مستقل، غير مرتبط بأي جهة حكومية أو مؤسسية. المالكة: أبرار العسيري.'
+          : '⚠️ Independent personal project, not affiliated with any government or institutional entity. Owner: Abrar Aseeri.'}
+      </div>
 
-        <section className="px-6 py-12">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 dir="rtl" className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#0B4644' }}>
-              كيف نقيّم المجلات في فيريجورنالز
-            </h1>
-            <div className="text-base mb-4" style={{ color: '#6B7280' }}>
-              How VeriJournals scores journals
-            </div>
-            <div
-              className="inline-flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-1 px-4 py-2 rounded-full text-xs"
-              style={{ background: '#DCFCE7', color: '#0B4644' }}
-            >
-              <span lang="en" className="font-semibold">Methodology v1.0 — adopted 2026-05-11</span>
-              <span className="hidden sm:inline opacity-50">·</span>
-              <span dir="rtl" className="font-fs font-semibold">المنهجية الإصدار 1.0 — معتمدة بتاريخ 11 مايو 2026</span>
-            </div>
-            <p dir="rtl" className="text-sm mt-4" style={{ color: '#6B7280' }}>
-              هذه المنهجية في تطور مستمر — راجع التاريخ في الأسفل.
-            </p>
-          </div>
-        </section>
+      <header className="mb-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">
+            {isAr ? 'المنهجية' : 'Methodology'}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {isAr ? `الإصدار ${VERSION} · آخر تحديث: ${LAST_UPDATED_AR}` : `Version ${VERSION} · Last updated: ${LAST_UPDATED_EN}`}
+          </p>
+        </div>
+        <button
+          onClick={() => setLang(isAr ? 'en' : 'ar')}
+          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-slate-50"
+        >
+          {isAr ? 'English' : 'العربية'}
+        </button>
+      </header>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div className="px-6 py-3" style={{ background: '#F3F4F6', borderBottom: '1px solid #E5E7EB' }}>
-                <span dir="rtl" className="text-sm font-semibold font-fs" style={{ color: '#0B4644' }}>ملخّص حالة المصادر</span>
-                <span className="text-xs ms-3" style={{ color: '#6B7280' }} lang="en">Source Freshness</span>
-              </div>
-              <table className="w-full">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wide" style={{ color: '#B2BEC4' }}>
-                    <th className="text-left px-6 py-3">
-                      <span dir="rtl" className="font-fs">المصدر</span>
-                      <span className="ms-2" lang="en">Source</span>
-                    </th>
-                    <th className="text-left px-6 py-3">
-                      <span dir="rtl" className="font-fs">آخر استيراد</span>
-                      <span className="ms-2" lang="en">Last Imported</span>
-                    </th>
-                    <th className="text-left px-6 py-3">
-                      <span dir="rtl" className="font-fs">التغطية</span>
-                      <span className="ms-2" lang="en">Coverage</span>
-                    </th>
-                    <th className="text-left px-6 py-3">
-                      <span dir="rtl" className="font-fs">التحديث القادم</span>
-                      <span className="ms-2" lang="en">Next Refresh</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { src: 'SCImago', last: '2023 snapshot', coverage: '61,486', next: 'annual (next: 2027)' },
-                    { src: 'NLM / PubMed', last: '2026-05-11', coverage: '14,507', next: 'monthly (next: 2026-06-01)' },
-                    { src: 'DOAJ', last: '2026-05-10', coverage: '8,645', next: 'monthly (next: 2026-06-01)' },
-                    { src: 'Retraction Watch', last: '2026-05-11', coverage: '1,840', next: 'monthly (next: 2026-06-01)' },
-                  ].map((r) => (
-                    <tr key={r.src} style={{ borderTop: '1px solid #F3F4F6' }}>
-                      <td className="px-6 py-3 text-sm font-semibold" style={{ color: '#0B4644' }}>{r.src}</td>
-                      <td className="px-6 py-3 text-sm" style={{ color: '#0B4644' }}>{r.last}</td>
-                      <td className="px-6 py-3 text-sm" style={{ color: '#0B4644' }}>{r.coverage}</td>
-                      <td className="px-6 py-3 text-sm" style={{ color: '#6B7280' }}>{r.next}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p dir="rtl" className="text-xs mt-2 font-fs" style={{ color: '#6B7280' }}>
-              ملخّص حالة المصادر اعتباراً من 2026-05-11.
-            </p>
-            <p className="text-xs" lang="en" style={{ color: '#6B7280' }}>
-              Source freshness summary as of 2026-05-11.
-            </p>
-          </div>
-        </section>
+      {isAr ? <ArabicContent /> : <EnglishContent />}
 
-        <section id="sources" className="px-6 pb-12 scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="مصادر البيانات" en="Data Sources" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dataSources.map((s) => (
-                <div key={s.nameEn} className="bg-white rounded-2xl border border-gray-100 p-6">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                      <div dir="rtl" className="font-bold text-base" style={{ color: '#0B4644' }}>{s.nameAr}</div>
-                      <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{s.nameEn}</div>
-                    </div>
-                    <span
-                      className="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
-                      style={{
-                        background: s.role === 'risk' ? '#FEE2E2' : '#DCFCE7',
-                        color: s.role === 'risk' ? '#DC2626' : '#05A854',
-                      }}
-                    >
-                      {s.role === 'risk' ? 'risk' : 'trust'} {s.weight}
-                    </span>
-                  </div>
-                  <p dir="rtl" className="text-sm leading-relaxed mb-2" style={{ color: '#0B4644' }}>{s.whatAr}</p>
-                  <p className="text-xs mb-4" style={{ color: '#6B7280' }}>{s.whatEn}</p>
-                  <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid #F3F4F6' }}>
-                    <div>
-                      <div className="text-xl font-bold" style={{ color: '#05A854' }}>{s.matches}</div>
-                      <div className="text-xs" style={{ color: '#B2BEC4' }}>journals matched</div>
-                    </div>
-                    <div className="text-xs text-right" style={{ color: '#B2BEC4' }}>{s.refresh}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+      <footer className="mt-12 border-t border-slate-200 pt-6 text-xs text-slate-500">
+        {isAr
+          ? '© VeriJournals — جميع الحقوق محفوظة. تُحدَّث المنهجية بعد مراجعة دورية أو تغيير جوهري في مصادر البيانات.'
+          : '© VeriJournals — All rights reserved. Methodology is updated after periodic review or material change in upstream data sources.'}
+      </footer>
+    </main>
+  );
+}
 
-        <section id="scoring" className="px-6 pb-12 scroll-mt-20">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="كيف نحسب الدرجة" en="How the Score is Calculated" />
+function ArabicContent() {
+  return (
+    <article className="prose prose-slate max-w-none rtl text-right">
 
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-6">
-              <div className="px-6 py-3" style={{ background: '#F3F4F6', borderBottom: '1px solid #E5E7EB' }}>
-                <span dir="rtl" className="text-sm font-semibold" style={{ color: '#0B4644' }}>إشارات الثقة (تزيد الدرجة)</span>
-                <span className="text-xs ms-3" style={{ color: '#6B7280' }}>Trust signals (add to score)</span>
-              </div>
-              <table className="w-full">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wide" style={{ color: '#B2BEC4' }}>
-                    <th className="text-left px-6 py-3">Signal</th>
-                    <th className="text-left px-6 py-3">Weight</th>
-                    <th className="text-left px-6 py-3">Source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trustSignals.map((s) => (
-                    <tr key={s.signal} style={{ borderTop: '1px solid #F3F4F6' }}>
-                      <td className="px-6 py-3 text-sm" style={{ color: '#0B4644' }}>{s.signal}</td>
-                      <td className="px-6 py-3 text-sm font-bold" style={{ color: '#05A854' }}>{s.weight}</td>
-                      <td className="px-6 py-3 text-sm">
-                        <a href={s.url} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80" style={{ color: '#0B4644' }}>
-                          {s.url}
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <h2>١. الغرض من هذه الوثيقة</h2>
+      <p>
+        تشرح هذه الوثيقة كيف تحسب منصة <strong>VeriJournals</strong> مؤشري <strong>Trust Score</strong>
+        و<strong>Risk Score</strong> لأي مجلة علمية. الهدف هو الشفافية الكاملة: أي باحث، ناشر، أو
+        محكِّم بإمكانه فهم كل عنصر يدخل في الحساب، ومن أين أتت البيانات، ومتى آخر تحديث لها.
+      </p>
+      <p>
+        هذه المنهجية <strong>منشورة بحسن نية</strong>، تستند إلى مصادر علمية معترف بها، وقابلة للاعتراض
+        عبر صفحة <a href="/appeal"><code>/appeal</code></a> أو بمراسلة <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+      </p>
 
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-6">
-              <div className="px-6 py-3" style={{ background: '#F3F4F6', borderBottom: '1px solid #E5E7EB' }}>
-                <span dir="rtl" className="text-sm font-semibold" style={{ color: '#0B4644' }}>إشارات المخاطرة (تزيد المخاطرة)</span>
-                <span className="text-xs ms-3" style={{ color: '#6B7280' }}>Risk signals (add to risk)</span>
-              </div>
-              <table className="w-full">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wide" style={{ color: '#B2BEC4' }}>
-                    <th className="text-left px-6 py-3">Signal</th>
-                    <th className="text-left px-6 py-3">Weight</th>
-                    <th className="text-left px-6 py-3">Trigger</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {riskSignals.map((s) => (
-                    <tr key={s.signal} style={{ borderTop: '1px solid #F3F4F6' }}>
-                      <td
-                        className="px-6 py-3 text-sm"
-                        style={{ color: s.active ? '#0B4644' : '#9CA3AF' }}
-                      >
-                        {s.signal}
-                      </td>
-                      <td
-                        className="px-6 py-3 text-sm font-bold"
-                        style={{ color: s.active ? '#DC2626' : '#9CA3AF' }}
-                      >
-                        {s.weight}
-                      </td>
-                      <td className="px-6 py-3 text-sm" style={{ color: s.active ? '#6B7280' : '#9CA3AF' }}>
-                        <div>{s.trigger}</div>
-                        {!s.active && s.statusAr && (
-                          <div className="mt-1 text-xs italic">
-                            <span dir="rtl" className="font-fs">الحالة: {s.statusAr}</span>
-                            <span className="mx-1 opacity-60">·</span>
-                            <span lang="en">Status: {s.statusEn}</span>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <h2>٢. ما تفعله VeriJournals وما لا تفعله</h2>
+      <p><strong>ما تفعله:</strong></p>
+      <ul>
+        <li>تجمع مؤشرات معلنة من 11 مصدراً علمياً موثوقاً (انظر القسم 3).</li>
+        <li>تعرض هذه المؤشرات كما هي (Pass-through) مع ذكر المصدر وتاريخه.</li>
+        <li>تحسب درجتين مركّبتين (Trust / Risk) بصيغة شفافة (انظر القسمين 5 و6).</li>
+        <li>تصنّف المجلة في إحدى الخانات الموضحة في القسم 7.</li>
+        <li>تقترح بدائل مفهرسة في نفس النطاق عند الطلب.</li>
+      </ul>
+      <p><strong>ما لا تفعله:</strong></p>
+      <ul>
+        <li>❌ لا تقرر بشكل قاطع أن مجلة "مفترسة" — هذا حكم قيمي خارج نطاقها.</li>
+        <li>❌ لا تستبدل قرار اللجنة العلمية أو هيئة التحرير في الجامعة/المستشفى.</li>
+        <li>❌ لا تضمن أن نشر بحث في مجلة "بدرجة ثقة مرتفعة" سيقبل/يُستشهد به.</li>
+        <li>❌ لا تجمع بيانات شخصية للمؤلفين أو تقيّم أفراداً.</li>
+        <li>❌ لا تتعامل مع تحقيقات سرقة علمية أو تدقيق أوراق منفردة.</li>
+      </ul>
+      <p>
+        النتائج <strong>استرشادية</strong>. القرار النهائي بالنشر في مجلة معيّنة يعود للباحث ومؤسسته.
+      </p>
 
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div className="px-6 py-3" style={{ background: '#F3F4F6', borderBottom: '1px solid #E5E7EB' }}>
-                <span dir="rtl" className="text-sm font-semibold" style={{ color: '#0B4644' }}>عتبات التصنيف</span>
-                <span className="text-xs ms-3" style={{ color: '#6B7280' }}>Status thresholds</span>
-              </div>
-              <table className="w-full">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wide" style={{ color: '#B2BEC4' }}>
-                    <th className="text-left px-6 py-3">Status</th>
-                    <th className="text-left px-6 py-3">Rule</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {thresholds.map((t) => (
-                    <tr key={t.status} style={{ borderTop: '1px solid #F3F4F6' }}>
-                      <td className="px-6 py-3 text-sm font-mono" style={{ color: '#0B4644' }}>{t.status}</td>
-                      <td className="px-6 py-3 text-sm font-mono" style={{ color: '#6B7280' }}>{t.rule}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+      <h2>٣. مصادر البيانات الأحد عشر</h2>
+      <p>كل مؤشر يأتي من مصدر معلن، مع رابط للمصدر الأصلي وتاريخ Snapshot في صفحة كل مجلة.</p>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="المراجعة البشرية للحالات الحرجة" en="Human Review of Caution-Level Classifications" />
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <p dir="rtl" className="text-sm leading-relaxed mb-3 font-fs" style={{ color: '#0B4644' }}>
-                عند تشغيل المنهجية المستقبلية مع بيانات Beall&apos;s List و Hijacked Journals، أي مجلة تصل تلقائياً إلى تصنيف &quot;تتطلب تحققاً دقيقاً&quot; ستُعرض كنتيجة مبدئية وتُحال للمراجعة البشرية قبل نشر التصنيف. حالياً لا توجد مجلات في هذا التصنيف، فهذا الإجراء يأخذ حكم البند المعطّل.
-              </p>
-              <p lang="en" className="text-xs leading-relaxed" style={{ color: '#6B7280' }}>
-                When Beall&apos;s List and Hijacked Journals data sources are integrated in future iterations, any journal automatically reaching the &quot;Requires Careful Verification&quot; classification will be displayed as a provisional result and routed for human review before public display of the classification. No journals currently occupy this category, so this safeguard is presently dormant.
-              </p>
-            </div>
-          </div>
-        </section>
+      <h3>مصادر تعزز الثقة (Trust-positive)</h3>
+      <ol>
+        <li><strong>NLM / PubMed</strong> — قاعدة المكتبة الوطنية الأمريكية للطب. الفهرسة تعني اجتياز معايير NLM.</li>
+        <li><strong>DOAJ</strong> — دليل المجلات مفتوحة الوصول. إدراج فعّال يعني التزام بمعايير شفافية ومراجعة أقران.</li>
+        <li><strong>Scimago Journal Rank (SJR)</strong> — قيمة عددية + ربع (Q1-Q4) من Scimago Lab.</li>
+        <li><strong>Web of Science</strong> — Clarivate. تُسجَّل المجلة في أحد الفهارس (SCI-E, SSCI, AHCI, ESCI).</li>
+        <li><strong>Crossref</strong> — تسجيل DOI صالح + اتساق ISSN.</li>
+        <li><strong>Scopus</strong> — Elsevier. الإدراج + CiteScore.</li>
+        <li><strong>Arab Impact Factor</strong> — مرجع للمجلات الإقليمية العربية/الخليجية (لا يُضاف للدرجة الإجمالية في الإصدار الحالي).</li>
+        <li><strong>وجود صفحة محررين علنية</strong> — التحقق من وجود صفحة "Editorial Board" في موقع المجلة تعرض أسماء وانتماءات المحررين علناً. <em>تحذير:</em> هذا مؤشر سطحي على وجود الصفحة فقط، لا على صحة الأسماء أو الانتماءات. التحقق العميق يبقى مسؤولية الباحث.</li>
+      </ol>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="التوزيع الحالي" en="Current Distribution" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-              {distribution.map((d) => (
-                <div key={d.statusKey} className="bg-white rounded-2xl border border-gray-100 p-5">
-                  <div className="text-3xl font-bold" style={{ color: '#05A854', lineHeight: 1.1 }}>{d.count}</div>
-                  <div className="text-xs mt-1" style={{ color: '#B2BEC4' }}>{d.pct} of {total.toLocaleString()}</div>
-                  <div dir="rtl" className="text-sm mt-2 font-medium font-fs" style={{ color: '#0B4644' }}>{d.labelAr}</div>
-                  <div className="text-xs" lang="en" style={{ color: '#6B7280' }}>{d.labelEnFactual}</div>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs" style={{ color: '#B2BEC4' }}>Last refreshed {lastRefreshDate}. Refreshes monthly.</p>
-          </div>
-        </section>
+      <h3>مصادر ترصد المخاطر (Risk-positive)</h3>
+      <ol start={9}>
+        <li><strong>DOAJ Removed List</strong> — قائمة المجلات التي أزالتها Directory of Open Access Journals من فهرسها بسبب عدم استيفاء معايير الشفافية أو مراجعة الأقران. مصدر دقيق (ISSN + سبب الإزالة + تاريخ).</li>
+        <li><strong>Hijacked Journal Checker</strong> — قاعدة بيانات Anna Abalkina وآخرون لرصد المجلات المُختطَفة (Cabells/Retraction Watch).</li>
+        <li><strong>Retraction Watch Database</strong> — قاعدة بيانات حالات السحب الموثَّقة (عبر Crossref API منذ 2023).</li>
+      </ol>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="حدود المنهجية" en="Limitations" />
-            <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-100">
-              {limitations.map((lim, i) => (
-                <div key={i} className="px-6 py-4">
-                  <p dir="rtl" className="text-sm leading-relaxed mb-1 font-fs" style={{ color: '#0B4644' }}>{lim.ar}</p>
-                  <p className="text-xs leading-relaxed" lang="en" style={{ color: '#6B7280' }}>{lim.en}</p>
-                </div>
-              ))}
-            </div>
+      <h2>٤. مبدأ "الناقل التقني" (Technical Conduit)</h2>
+      <p>
+        المؤشرات الأولية (الفهرسة، الـ Quartile، Impact Factor، CiteScore، حالات السحب) <strong>تُعرَض كما تردنا من
+        المصدر</strong> بدون تعديل، بدون تقريب صامت، بدون استنتاج. لكل قيمة:
+      </p>
+      <ul>
+        <li>اسم المصدر.</li>
+        <li>تاريخ ووقت آخر تحديث (Snapshot timestamp).</li>
+        <li>رابط قابل للنقر للمصدر الأصلي.</li>
+      </ul>
+      <p>
+        لو كان المصدر غير متاح أو أعطى بيانات غير قابلة للتأكد، نعرض "البيانات غير متاحة" بدلاً من تخمين قيمة.
+      </p>
+      <p>
+        <strong>إذا ثبت أن المصدر الأصلي خاطئ</strong>، يجب على الناشر أو الباحث التواصل أولاً مع المصدر الأصلي
+        لتصحيحه. عند تحديث المصدر، يُحدَّث VeriJournals تلقائياً في الدورة التالية.
+      </p>
 
-            <div className="mt-6 bg-white rounded-2xl border border-gray-100 p-6">
-              <div className="mb-4">
-                <h3 dir="rtl" className="text-base font-bold font-fs" style={{ color: '#0B4644' }}>اعتراض على البيانات أو الحساب</h3>
-                <div className="text-xs" lang="en" style={{ color: '#6B7280' }}>Object to Data or Scoring</div>
-              </div>
-              <ul dir="rtl" className="font-fs text-sm space-y-2 mb-4" style={{ color: '#0B4644' }}>
-                <li>
-                  تنبيه عن تباين في بيانات مصدر معين:{' '}
-                  <a
-                    href="/report-discrepancy"
-                    className="underline hover:opacity-80"
-                    style={{ color: '#05A854' }}
-                  >
-                    /report-discrepancy
-                  </a>
-                </li>
-                <li style={{ color: '#9CA3AF' }}>طلب مراجعة تصنيف مجلة: قريباً (Phase 2)</li>
-                <li style={{ color: '#9CA3AF' }}>استفسار عام عن المنهجية: قيد الإعداد</li>
-              </ul>
-              <ul lang="en" className="text-xs space-y-2" style={{ color: '#6B7280' }}>
-                <li>
-                  Report a discrepancy in source data:{' '}
-                  <a
-                    href="/report-discrepancy"
-                    className="underline hover:opacity-80"
-                    style={{ color: '#05A854' }}
-                  >
-                    /report-discrepancy
-                  </a>
-                </li>
-                <li style={{ color: '#9CA3AF' }}>Request classification review: coming soon (Phase 2)</li>
-                <li style={{ color: '#9CA3AF' }}>General methodology inquiry: in preparation</li>
-              </ul>
-            </div>
-          </div>
-        </section>
+      <h2>٥. حساب Trust Score (من 0 إلى 100)</h2>
+      <p>درجة الثقة هي مجموع نقاط من أوزان معلنة. الأوزان الحالية:</p>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="تقرير التحيّز" en="Bias Audit" />
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <p dir="rtl" className="text-sm leading-relaxed mb-3 font-fs" style={{ color: '#0B4644' }}>
-                يُجرى أول تقرير سنوي لمراجعة التحيّز المحتمل في المنهجية (الجغرافي، اللغوي، التخصصي) في 2027-05. حتى صدور التقرير، تُراقَب الفروقات في التصنيف عبر المناطق الجغرافية واللغات يدوياً عند مراجعة عيّنات.
-              </p>
-              <p lang="en" className="text-xs leading-relaxed" style={{ color: '#6B7280' }}>
-                The first annual bias audit reviewing potential methodological bias (geographic, linguistic, disciplinary) is scheduled for May 2027. Until the audit is published, classification disparities across regions and languages are monitored manually during sample reviews.
-              </p>
-            </div>
-          </div>
-        </section>
+      <table>
+        <thead>
+          <tr>
+            <th>المؤشر</th>
+            <th>الوزن</th>
+            <th>شرط التفعيل</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>NLM / PubMed</td><td>+20</td><td>مفهرسة في NLM Catalog</td></tr>
+          <tr><td>DOAJ</td><td>+15</td><td>إدراج فعّال (ليس Removed)</td></tr>
+          <tr><td>Web of Science</td><td>+15</td><td>مدرجة في أحد فهارس WoS</td></tr>
+          <tr><td>Scopus</td><td>+15</td><td>مدرجة فعلياً (ليست Discontinued)</td></tr>
+          <tr><td>Scimago Q1 أو Q2</td><td>+15</td><td>أعلى ربع أو الثاني</td></tr>
+          <tr><td>Scimago Q3 أو Q4</td><td>+5</td><td>الربع الثالث أو الرابع (لا تُضاف مع Q1/Q2)</td></tr>
+          <tr><td>Crossref + ISSN متسق</td><td>+10</td><td>DOI صالح + ISSN يطابق</td></tr>
+          <tr><td>صفحة محررين علنية</td><td>+10</td><td>وجود صفحة Editorial Board في موقع المجلة (مؤشر سطحي)</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>الحد الأقصى = 100.</strong> لا يُضاف Q3/Q4 مع Q1/Q2 (يُختار الأعلى فقط).
+        Arab Impact Factor مذكور كمرجع للمجلات الإقليمية لكنه لا يُضاف للدرجة الإجمالية في الإصدار الحالي.
+      </p>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="مَن صاغ هذه المنهجية" en="Methodology Authors" />
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <p dir="rtl" className="text-sm leading-relaxed mb-3 font-fs" style={{ color: '#0B4644' }}>
-                تم تطوير هذه المنهجية من قِبَل مؤسِّس المنصة، باحثة في مجال النشر العلمي ونزاهة البحث، استناداً إلى الممارسات الدولية في التحقق من الجودة العلمية، بما في ذلك معايير DOAJ و COPE و ICMJE و WAME. تخضع المنهجية للمراجعة الدورية وتُحدَّث وفق التقدم العلمي.
-              </p>
-              <p lang="en" className="text-xs leading-relaxed" style={{ color: '#6B7280' }}>
-                This methodology was developed by the platform&apos;s founder, a researcher in scientific publishing and research integrity, based on international best practices in scientific quality verification, including criteria from DOAJ, COPE, ICMJE, and WAME. The methodology is subject to periodic review and is updated as scientific understanding evolves.
-              </p>
-            </div>
-          </div>
-        </section>
+      <h2>٦. حساب Risk Score (من 0 إلى 100)</h2>
+      <p>درجة الخطر هي مجموع نقاط من إشارات خطر معلنة:</p>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="التحقق المستقل" en="Independent Verification" />
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <p dir="rtl" className="text-sm leading-relaxed mb-2 font-fs" style={{ color: '#0B4644' }}>
-                يمكن لأي قارئ إعادة حساب درجة مجلة باتباع الخطوات التالية:
-              </p>
-              <ol dir="rtl" className="font-fs text-sm leading-relaxed list-decimal pe-5 space-y-1 mb-3" style={{ color: '#0B4644' }}>
-                <li>تحقق من فهرسة المجلة في DOAJ و NLM/PubMed و SCImago عبر الروابط المباشرة في قسم المراجع.</li>
-                <li>اجمع الأوزان المقابلة من جدول إشارات الثقة.</li>
-                <li>تحقق من معدّل سحب الأوراق العلمية للمجلة في Retraction Watch.</li>
-                <li>طبّق العتبات المنشورة في جدول عتبات التصنيف.</li>
-              </ol>
-              <p dir="rtl" className="text-sm leading-relaxed mb-4 font-fs" style={{ color: '#0B4644' }}>
-                ستحصل على نفس النتيجة التي تعرضها المنصة، مما يجعل التصنيف قابلاً للمراجعة المستقلة.
-              </p>
-              <p lang="en" className="text-xs leading-relaxed mb-2" style={{ color: '#6B7280' }}>
-                Any reader can reproduce a journal&apos;s score by following these steps:
-              </p>
-              <ol lang="en" className="text-xs leading-relaxed list-decimal ps-5 space-y-1 mb-3" style={{ color: '#6B7280' }}>
-                <li>Verify the journal&apos;s indexing status in DOAJ, NLM/PubMed, and SCImago via the direct links in the References section.</li>
-                <li>Sum the corresponding weights from the Trust Signals table.</li>
-                <li>Check the journal&apos;s retraction rate in Retraction Watch.</li>
-                <li>Apply the published thresholds from the Status Thresholds table.</li>
-              </ol>
-              <p lang="en" className="text-xs leading-relaxed" style={{ color: '#6B7280' }}>
-                You will obtain the same result the platform displays, making the classification independently reproducible.
-              </p>
-            </div>
-          </div>
-        </section>
+      <table>
+        <thead>
+          <tr>
+            <th>المؤشر</th>
+            <th>الوزن</th>
+            <th>شرط التفعيل</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Hijacked Journal Checker</td><td>+30</td><td>هوية مُختطَفة موثَّقة</td></tr>
+          <tr><td>DOAJ Removed</td><td>+25</td><td>أُزيلت من DOAJ مع سبب موثّق</td></tr>
+          <tr><td>عدم تطابق نطاق ISSN/الموقع</td><td>+15</td><td>الـ Domain لا يتطابق مع ISSN registry</td></tr>
+          <tr><td>غياب صفحة محررين علنية</td><td>+10</td><td>لا توجد صفحة Editorial Board علنية في موقع المجلة</td></tr>
+          <tr><td>Retraction Watch (rate-based)</td><td>+10</td><td>نسبة سحب أكبر من 0.5% من إجمالي المنشورات</td></tr>
+          <tr><td>عدم اتساق ISSN بين المصادر</td><td>+5</td><td>اختلاف ISSN بين registry والمواقع</td></tr>
+          <tr><td>لا يوجد Crossref DOI</td><td>+5</td><td>المجلة لا تسجّل DOIs</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>الحد الأقصى = 100.</strong> "سرعة نشر مشبوهة" مذكورة كإشارة قيد التطوير،
+        لم تُفعَّل بعد في الحساب الآلي.
+      </p>
 
-        <section className="px-6 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="المراجع" en="References" />
-            <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-100">
-              {references.map((r) => (
-                <div key={r.url} className="px-6 py-3 flex items-center justify-between gap-4">
-                  <span className="text-sm" style={{ color: '#0B4644' }}>{r.name}</span>
-                  <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-xs font-mono underline hover:opacity-80 truncate" style={{ color: '#05A854' }}>
-                    {r.url}
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+      <h2>٧. خانات التصنيف</h2>
+      <p>تنتج خمس خانات ممكنة، تحدّدها قواعد مكتوبة <strong>بترتيب الأولوية</strong>:</p>
+      <ol>
+        <li><strong>Has Retracted Content (تتضمن أوراقاً مسحوبة) ↩</strong> — Retraction Watch موثَّقة و Risk ≥ 25.</li>
+        <li><strong>Elevated Risk (مؤشر مخاطر مرتفع) ✗</strong> — Risk ≥ 40 (وإذا لم تتحقق الأولوية أعلاه).</li>
+        <li><strong>Legitimate (موثوقة) ✓</strong> — Trust ≥ 60 و Risk أقل من 30.</li>
+        <li><strong>Mixed Signals (إشارات متباينة) ⚠</strong> — Trust ≥ 40 و Risk أقل من 40 (لكن لا تستوفي الموثوقية).</li>
+        <li><strong>Under Evaluation (تحت التقييم) ~</strong> — لم تتحقق أي خانة من السابق.</li>
+      </ol>
+      <p>
+        <strong>منطق التقييم:</strong> يُقيَّم كل تقرير حسب الأولوية أعلاه. أول خانة تتحقق شروطها
+        هي التصنيف النهائي. هذا يضمن أن المجلات ذات Trust العالي وRisk المرتفع تُصنَّف بحسب
+        الخطر، لا بحسب الثقة.
+      </p>
+      <p>
+        <strong>ملاحظة مهمة:</strong> VeriJournals لا تستخدم مصطلح <em>"predatory"</em> أو <em>"مفترسة"</em> كحكم
+        مباشر على مجلة. أعلى مستوى خطر يُسمَّى "Elevated Risk Indicator". الحكم القاطع متروك للباحث ومؤسسته
+        بعد مراجعة المصادر الأصلية.
+      </p>
 
-        <section className="px-6 pb-16">
-          <div className="max-w-4xl mx-auto">
-            <SectionHeading ar="سجل التحديثات" en="Changelog" />
-            <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-100">
-              {changelog.map((c, i) => (
-                <div key={i} className="px-6 py-4 flex flex-col md:flex-row md:items-baseline md:gap-6">
-                  <div className="text-xs font-mono mb-1 md:mb-0 flex-shrink-0" style={{ color: '#B2BEC4', minWidth: '90px' }}>{c.date}</div>
-                  <div className="flex-1">
-                    <p dir="rtl" className="text-sm mb-1" style={{ color: '#0B4644' }}>{c.ar}</p>
-                    <p className="text-xs" style={{ color: '#6B7280' }}>
-                      {c.en}
-                      {c.commit && <span className="font-mono ms-2" style={{ color: '#B2BEC4' }}>({c.commit})</span>}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+      <h2>٨. مستويات الثقة في التقرير</h2>
+      <p>كل تقرير له مستوى ثقة في حد ذاته، بناءً على عدد المؤشرات المتوفرة بصراحة:</p>
+      <ul>
+        <li><strong>High:</strong> أكثر من 70% من المؤشرات المفعّلة لها بيانات صريحة.</li>
+        <li><strong>Medium:</strong> 40-70% من المؤشرات المفعّلة لها بيانات صريحة.</li>
+        <li><strong>Low:</strong> أقل من 40% (نوصي بمراجعة المصادر مباشرة قبل أي قرار).</li>
+      </ul>
 
-      </main>
-      <Footer />
-    </>
-  )
+      <h2>٩. تحديث البيانات (Snapshot Policy)</h2>
+      <ul>
+        <li><strong>المصادر النشطة (PubMed, DOAJ, Crossref, Retraction Watch):</strong> تُحدَّث شهرياً عبر GitHub Actions cron.</li>
+        <li><strong>المصادر السنوية (Scimago, JCR/WoS, Scopus CiteScore):</strong> تُحدَّث عند إصدار النسخة السنوية الجديدة من المصدر.</li>
+      </ul>
+      <p>
+        تاريخ Snapshot يظهر بجانب كل قيمة في تقرير المجلة. إذا تغيّر مصدر بعد تاريخ Snapshot،
+        لا تتحمل VeriJournals مسؤولية بأثر رجعي.
+      </p>
+
+      <h2>١٠. حدود المنهجية (Limitations)</h2>
+      <p>للشفافية، نعترف بالحدود التالية:</p>
+      <ul>
+        <li><strong>الأوزان اجتهادية:</strong> الأوزان المذكورة قائمة على ممارسات COPE وICMJE وأدبيات سلامة النشر، لكنها <strong>ليست قياسية عالمياً</strong>. مراجعتها تتم سنوياً.</li>
+        <li><strong>المجلات الحديثة:</strong> المجلات الجديدة (أقل من عامين) قد تُصنَّف تلقائياً "Under Evaluation" لقلة البيانات، حتى لو كانت ممتازة.</li>
+        <li><strong>المجلات الإقليمية:</strong> المجلات العربية أو الجنوبية قد تكون مفهرسة محلياً فقط، فيظهر Trust أقل من الواقع المهني. نعمل على توسيع Arab Impact Factor وإضافة قواعد البيانات الإقليمية الأخرى.</li>
+        <li><strong>التحيّز اللغوي:</strong> المصادر الإنجليزية مهيمنة، مما يخلق تحيزاً ضد المجلات بلغات أخرى.</li>
+        <li><strong>التأخر في تحديث المصدر:</strong> لو سحب مصدر مجلةً من قائمة سوداء، قد يتأخر تحديثنا حسب دورة التحديث.</li>
+        <li><strong>القرارات الآلية:</strong> Trust/Risk قراران حسابيان، لا يحلان محل التقييم البشري الخبير.</li>
+      </ul>
+
+      <h2>١١. حق المراجعة البشرية</h2>
+      <p>
+        وفقاً لنظام حماية البيانات الشخصية السعودي (المواد 4، 7) ومبادئ سدايا لأخلاقيات الذكاء الاصطناعي
+        (مبدأ المساءلة)، لكل ناشر أو باحث الحق في طلب مراجعة بشرية لأي درجة. التقدم:
+      </p>
+      <ul>
+        <li>عبر صفحة <a href="/appeal"><code>/appeal</code></a> (قيد الإكمال).</li>
+        <li>أو مباشرة عبر <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</li>
+      </ul>
+      <p>الردّ خلال 30 يوماً، مع توثيق المراجعة في سجل المنصة.</p>
+
+      <h2>١٢. الإبلاغ عن خطأ في البيانات</h2>
+      <p>
+        إذا اكتشفت قيمة خاطئة في تقرير مجلة، استخدمي صفحة{' '}
+        <a href="/report-discrepancy"><code>/report-discrepancy</code></a>. سيتم:
+      </p>
+      <ol>
+        <li>تسجيل البلاغ.</li>
+        <li>إعادة الاستعلام من المصدر الأصلي.</li>
+        <li>إذا كان المصدر صحَّح، نُحدِّث نحن.</li>
+        <li>إذا كان المصدر لم يتغير، نحيلك إليه لتصحيحه عنده.</li>
+      </ol>
+
+      <h2>١٣. المعايير الدولية المُلهَمة</h2>
+      <p>المنهجية مُلهَمة من ممارسات:</p>
+      <ul>
+        <li><strong>COPE Core Practices</strong> — Committee on Publication Ethics.</li>
+        <li><strong>ICMJE Recommendations</strong> — International Committee of Medical Journal Editors.</li>
+        <li><strong>WAME Policy Statements</strong> — World Association of Medical Editors.</li>
+        <li><strong>DOAJ Best Practice Criteria</strong>.</li>
+        <li><strong>Saudi SDAIA AI Ethics Principles</strong> — Transparency, Fairness, Accountability.</li>
+      </ul>
+      <p>
+        <em>تنبيه:</em> هذه المعايير غير ملزمة قانونياً، لكنها مرجع مهني معتمد. لا تدّعي VeriJournals
+        التوافق الكامل مع جميع متطلباتها.
+      </p>
+
+      <h2>١٤. سجل الإصدارات</h2>
+      <ul>
+        <li><strong>الإصدار 1.0</strong> (مايو 2026) — الإصدار الأولي.</li>
+      </ul>
+      <p>عند أي تغيير جوهري في الأوزان أو العتبات، يُرفع رقم الإصدار، ويُحفظ الإصدار السابق في أرشيف عام.</p>
+
+      <h2>١٥. سياسة تغيير الخوارزمية</h2>
+      <p>
+        أي تعديل جوهري على الأوزان أو العتبات (مثال: تغيير وزن مصدر، إضافة/حذف مصدر، تعديل عتبات التصنيف)
+        يُعلَن في هذه الصفحة <strong>قبل تطبيقه بـ 30 يوماً</strong>. يُحفظ الإصدار السابق في
+        أرشيف عام، ويتم إخطار المستخدمين المسجلين عبر البريد الإلكتروني.
+      </p>
+      <p>
+        التعديلات التشغيلية الصغيرة (إصلاح أخطاء، تحسينات أداء، تحديثات أمنية) لا تتطلب إعلاناً مسبقاً.
+      </p>
+
+      <h2>١٦. إفصاح عن تضارب المصالح</h2>
+      <p>
+        أبرار العسيري، مالكة المنصة، باحثة طبية تستخدم المنصة شخصياً لأبحاثها الخاصة. لا يوجد
+        تمويل تجاري من أي ناشر، ولا أي اتفاقية تعاقدية مع المجلات أو الناشرين المعروضين في المنصة.
+      </p>
+      <p>
+        لو نشأت أي علاقة تعاقدية مستقبلية مع أي ناشر، ستُعلَن في هذه الصفحة قبل بدئها بـ 30 يوماً.
+      </p>
+
+      <h2>١٧. التواصل</h2>
+      <p>
+        لأي استفسار أو طلب توضيح حول المنهجية:{' '}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+      </p>
+    </article>
+  );
+}
+
+function EnglishContent() {
+  return (
+    <article className="prose prose-slate max-w-none">
+
+      <h2>1. Purpose of This Document</h2>
+      <p>
+        This document explains how <strong>VeriJournals</strong> computes the <strong>Trust Score</strong>
+        and <strong>Risk Score</strong> for any scientific journal. The goal is full transparency: any
+        researcher, publisher, or reviewer should be able to understand every input, its source, and the
+        most recent snapshot date.
+      </p>
+      <p>
+        This methodology is <strong>published in good faith</strong>, grounded in recognized scientific
+        sources, and open to challenge via <a href="/appeal"><code>/appeal</code></a> or by emailing{' '}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+      </p>
+
+      <h2>2. What VeriJournals Does and Does Not Do</h2>
+      <p><strong>Does:</strong></p>
+      <ul>
+        <li>Aggregates declared indicators from 11 trusted scientific sources (see §3).</li>
+        <li>Displays indicators pass-through, with source attribution and timestamp.</li>
+        <li>Computes two composite scores (Trust / Risk) via a transparent formula (§§5–6).</li>
+        <li>Classifies a journal into one of the categories in §7.</li>
+        <li>Suggests indexed alternatives within the same scope on request.</li>
+      </ul>
+      <p><strong>Does not:</strong></p>
+      <ul>
+        <li>❌ Declare conclusively that a journal is "predatory" — that is a value judgment outside our scope.</li>
+        <li>❌ Replace the decision of an institutional ethics or editorial committee.</li>
+        <li>❌ Guarantee that publishing in a high-Trust journal will result in acceptance or citation.</li>
+        <li>❌ Collect personal data about authors or rate individuals.</li>
+        <li>❌ Handle plagiarism investigations or individual-paper audits.</li>
+      </ul>
+      <p>Results are <strong>advisory</strong>. The final decision rests with the researcher and their institution.</p>
+
+      <h2>3. The Eleven Data Sources</h2>
+      <p>Each indicator comes from a declared source, with a link to the original and a snapshot date on each journal page.</p>
+
+      <h3>Trust-positive sources</h3>
+      <ol>
+        <li><strong>NLM / PubMed</strong> — US National Library of Medicine. Indexing means NLM editorial criteria were met.</li>
+        <li><strong>DOAJ</strong> — Directory of Open Access Journals. Active listing implies transparency and peer-review compliance.</li>
+        <li><strong>Scimago Journal Rank (SJR)</strong> — numerical score + quartile (Q1–Q4) from Scimago Lab.</li>
+        <li><strong>Web of Science</strong> — Clarivate. Journal is listed in one of WoS indexes (SCI-E, SSCI, AHCI, ESCI).</li>
+        <li><strong>Crossref</strong> — valid DOI registration + consistent ISSN.</li>
+        <li><strong>Scopus</strong> — Elsevier. Listing + CiteScore.</li>
+        <li><strong>Arab Impact Factor</strong> — reference for regional Arabic/Gulf journals (not added to composite score in current version).</li>
+        <li><strong>Editorial board page presence</strong> — Verifies that the journal has a public "Editorial Board" page listing names and affiliations. <em>Caveat:</em> This is a surface-level indicator of page existence only, not validation of name authenticity or affiliations. Deep verification remains the researcher's responsibility.</li>
+      </ol>
+
+      <h3>Risk-positive sources</h3>
+      <ol start={9}>
+        <li><strong>DOAJ Removed List</strong> — Journals removed by the Directory of Open Access Journals from its index for failing transparency or peer-review standards. Accurate source (ISSN + removal reason + date).</li>
+        <li><strong>Hijacked Journal Checker</strong> — database by Anna Abalkina et al. tracking hijacked journals (Cabells/Retraction Watch).</li>
+        <li><strong>Retraction Watch Database</strong> — documented retraction records (via Crossref API since 2023).</li>
+      </ol>
+
+      <h2>4. Technical Conduit Principle</h2>
+      <p>
+        Primary indicators (indexing status, quartile, Impact Factor, CiteScore, retraction counts) are
+        displayed <strong>exactly as received</strong> — no modification, no silent rounding, no inference.
+        Every value carries:
+      </p>
+      <ul>
+        <li>Source name.</li>
+        <li>Snapshot timestamp.</li>
+        <li>Clickable link to the original source.</li>
+      </ul>
+      <p>If a source is unavailable or returns unverifiable data, we show "Data unavailable" instead of guessing.</p>
+      <p>
+        <strong>If the upstream source is wrong</strong>, the publisher or researcher should contact the
+        original source first. When the source updates, VeriJournals updates automatically in the next cycle.
+      </p>
+
+      <h2>5. Trust Score Calculation (0–100)</h2>
+      <p>Trust Score is a sum of points from declared weights:</p>
+
+      <table>
+        <thead>
+          <tr><th>Indicator</th><th>Weight</th><th>Trigger</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>NLM / PubMed</td><td>+20</td><td>Indexed in NLM Catalog</td></tr>
+          <tr><td>DOAJ</td><td>+15</td><td>Actively listed (not Removed)</td></tr>
+          <tr><td>Web of Science</td><td>+15</td><td>Listed in any WoS index</td></tr>
+          <tr><td>Scopus</td><td>+15</td><td>Actively listed (not Discontinued)</td></tr>
+          <tr><td>Scimago Q1 or Q2</td><td>+15</td><td>Top or second quartile</td></tr>
+          <tr><td>Scimago Q3 or Q4</td><td>+5</td><td>Third or fourth quartile (does not stack with Q1/Q2)</td></tr>
+          <tr><td>Crossref + ISSN consistent</td><td>+10</td><td>Valid DOI + matching ISSN</td></tr>
+          <tr><td>Public editorial board page</td><td>+10</td><td>Editorial Board page exists on journal's website (surface indicator)</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Maximum = 100.</strong> Q3/Q4 does not stack with Q1/Q2 (highest applicable only).
+        Arab Impact Factor is noted as a reference for regional journals but is not added to the
+        composite score in the current version.
+      </p>
+
+      <h2>6. Risk Score Calculation (0–100)</h2>
+      <p>Risk Score is a sum of declared risk signals:</p>
+
+      <table>
+        <thead>
+          <tr><th>Indicator</th><th>Weight</th><th>Trigger</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Hijacked Journal Checker</td><td>+30</td><td>Documented hijacked identity</td></tr>
+          <tr><td>DOAJ Removed</td><td>+25</td><td>Removed from DOAJ with documented reason</td></tr>
+          <tr><td>ISSN/domain mismatch</td><td>+15</td><td>Domain does not match ISSN registry</td></tr>
+          <tr><td>No public editorial board page</td><td>+10</td><td>No public Editorial Board page on journal's website</td></tr>
+          <tr><td>Retraction Watch (rate-based)</td><td>+10</td><td>Retraction rate above 0.5% of total publications</td></tr>
+          <tr><td>ISSN inconsistency across sources</td><td>+5</td><td>Different ISSNs in registry vs. sites</td></tr>
+          <tr><td>No Crossref DOI</td><td>+5</td><td>Journal does not register DOIs</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Maximum = 100.</strong> "Suspicious publication speed" is listed as an indicator
+        under development, not yet active in automated scoring.
+      </p>
+
+      <h2>7. Classification Categories</h2>
+      <p>Five possible classifications, evaluated <strong>by priority order</strong>:</p>
+      <ol>
+        <li><strong>Has Retracted Content ↩</strong> — Retraction Watch documented and Risk ≥ 25.</li>
+        <li><strong>Elevated Risk ✗</strong> — Risk ≥ 40 (if priority above is not met).</li>
+        <li><strong>Legitimate ✓</strong> — Trust ≥ 60 and Risk below 30.</li>
+        <li><strong>Mixed Signals ⚠</strong> — Trust ≥ 40 and Risk below 40 (but does not meet Legitimate).</li>
+        <li><strong>Under Evaluation ~</strong> — none of the above are met.</li>
+      </ol>
+      <p>
+        <strong>Evaluation logic:</strong> Each report is evaluated by the priority order above.
+        The first matching category becomes the final classification. This ensures journals with
+        high Trust but elevated Risk are classified by Risk, not by Trust.
+      </p>
+      <p>
+        <strong>Important:</strong> VeriJournals does <em>not</em> apply the term <em>"predatory"</em>
+        as a direct judgment. The highest risk category is called "Elevated Risk Indicator". Conclusive
+        judgment is left to the researcher and their institution after consulting primary sources.
+      </p>
+
+      <h2>8. Report Confidence Levels</h2>
+      <p>Each report has its own confidence level based on indicator availability:</p>
+      <ul>
+        <li><strong>High:</strong> More than 70% of active indicators have explicit data.</li>
+        <li><strong>Medium:</strong> 40–70% of active indicators have explicit data.</li>
+        <li><strong>Low:</strong> Less than 40% (we recommend consulting primary sources directly before any decision).</li>
+      </ul>
+
+      <h2>9. Snapshot Policy</h2>
+      <ul>
+        <li><strong>Active sources (PubMed, DOAJ, Crossref, Retraction Watch):</strong> updated monthly via GitHub Actions cron.</li>
+        <li><strong>Annual sources (Scimago, JCR/WoS, Scopus CiteScore):</strong> updated with each new annual release.</li>
+      </ul>
+      <p>
+        Snapshot date appears next to every value. If a source changes after our snapshot, VeriJournals
+        is not retroactively liable.
+      </p>
+
+      <h2>10. Limitations</h2>
+      <ul>
+        <li><strong>Weights are judgment-based:</strong> the weights draw on COPE, ICMJE, and publication-ethics literature but are <strong>not a global standard</strong>. Reviewed annually.</li>
+        <li><strong>New journals:</strong> journals under two years old may be auto-classified "Under Evaluation" due to scarce data, even if excellent.</li>
+        <li><strong>Regional journals:</strong> Arabic or Global-South journals may be locally indexed only, making Trust appear lower than professional reality. We're working on expanding Arab Impact Factor and adding other regional databases.</li>
+        <li><strong>Language bias:</strong> English-language sources dominate, creating bias against non-English journals.</li>
+        <li><strong>Source update lag:</strong> if a source removes a journal from a blacklist, our update may lag depending on refresh cycle.</li>
+        <li><strong>Automated decisions:</strong> Trust/Risk are computational, not a substitute for expert human review.</li>
+      </ul>
+
+      <h2>11. Right to Human Review</h2>
+      <p>
+        Under Saudi PDPL (Articles 4, 7) and SDAIA AI Ethics Principles (Accountability principle),
+        every publisher or researcher has the right to request human review of any score:
+      </p>
+      <ul>
+        <li>Via <a href="/appeal"><code>/appeal</code></a> (under construction).</li>
+        <li>Or directly via <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</li>
+      </ul>
+      <p>Response within 30 days, with the review documented in our platform log.</p>
+
+      <h2>12. Reporting Data Errors</h2>
+      <p>If you find an incorrect value in a journal report, use <a href="/report-discrepancy"><code>/report-discrepancy</code></a>. We will:</p>
+      <ol>
+        <li>Log the report.</li>
+        <li>Re-query the original source.</li>
+        <li>If the source has corrected, we update.</li>
+        <li>If the source has not changed, we refer you to it for primary correction.</li>
+      </ol>
+
+      <h2>13. International Standards (Inspirational)</h2>
+      <p>The methodology is inspired by practices from:</p>
+      <ul>
+        <li><strong>COPE Core Practices</strong> — Committee on Publication Ethics.</li>
+        <li><strong>ICMJE Recommendations</strong> — International Committee of Medical Journal Editors.</li>
+        <li><strong>WAME Policy Statements</strong> — World Association of Medical Editors.</li>
+        <li><strong>DOAJ Best Practice Criteria</strong>.</li>
+        <li><strong>Saudi SDAIA AI Ethics Principles</strong> — Transparency, Fairness, Accountability.</li>
+      </ul>
+      <p>
+        <em>Note:</em> these standards are not legally binding but are recognized professional references.
+        VeriJournals does not claim full compliance with all their requirements.
+      </p>
+
+      <h2>14. Version Log</h2>
+      <ul>
+        <li><strong>Version 1.0</strong> (May 2026) — initial release.</li>
+      </ul>
+      <p>Material changes to weights or thresholds increment the version, with prior versions archived publicly.</p>
+
+      <h2>15. Algorithm Change Policy</h2>
+      <p>
+        Any material change to weights or thresholds (e.g., changing a source's weight, adding/removing
+        a source, adjusting classification thresholds) is announced on this page <strong>30 days before
+        taking effect</strong>. Prior versions are archived publicly, and registered users are notified
+        by email.
+      </p>
+      <p>
+        Minor operational changes (bug fixes, performance improvements, security updates) do not
+        require prior announcement.
+      </p>
+
+      <h2>16. Conflict of Interest Disclosure</h2>
+      <p>
+        Abrar Aseeri, owner of the platform, is a medical researcher who uses the platform personally
+        for her own research. There is no commercial funding from any publisher, nor any contractual
+        agreement with the journals or publishers displayed on the platform.
+      </p>
+      <p>
+        Should any future contractual relationship with a publisher arise, it will be disclosed on
+        this page 30 days before commencement.
+      </p>
+
+      <h2>17. Contact</h2>
+      <p>For inquiries or clarifications about methodology: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a></p>
+    </article>
+  );
 }
